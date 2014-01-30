@@ -1,35 +1,39 @@
 {
-    "name": "slicks",
-    "version": "0.0.0",
-    "description": "An MVC framework for Javascript.",
-    "main": "slicks.js",
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "keywords": [
-        "mvc",
-        "model",
-        "controller",
-        "view",
-        "router",
-        "javascript",
-        "framework"
-    ],
-    "repository": {
-        "type": "git",
-        "url": "git://github.com/steveesamson/slicks.git"
-    },
-    "author": "Steve Samson <stevee.samson@gmail.com>",
-    "licenses": [
-        {
-            "type": "MIT",
-            "url": "https://github.com/steveesamson/slicks/blob/master/MIT-License.txt"
-        }
-    ],
-    "bugs": {
-        "url": "https://github.com/steveesamson/slicks/issues"
-    },
-    "dependencies": {
-        "jquery": "~2.1.0"
+  "name": "slicks",
+  "version": "0.0.0",
+  "description": "An MVC framework for Javascript.",
+  "main": "slicks.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mvc",
+    "model",
+    "controller",
+    "view",
+    "router",
+    "javascript",
+    "framework"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/steveesamson/slicks.git"
+  },
+  "author": "Steve Samson <stevee.samson@gmail.com>",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/steveesamson/slicks/blob/master/MIT-License.txt"
     }
+  ],
+  "bugs": {
+    "url": "https://github.com/steveesamson/slicks/issues"
+  },
+  "dependencies": {
+    "jquery": "~2.1.0"
+  },
+  "devDependencies": {
+    "mocha": "~1.17.1",
+    "chai": "~1.9.0"
+  }
 }
