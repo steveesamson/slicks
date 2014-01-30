@@ -20,8 +20,7 @@ Slicks has the following:
   npm install slicks --save
 
 ## Usage
-```
-   javascript
+```javascript
 
    var Slicks = require('slicks')'
        userModel = Slicks.Model({}),
