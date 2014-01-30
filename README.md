@@ -1,4 +1,4 @@
-#Slicks - Intro
+#Slicks
 
 Slicks is a simple Javascript MVC framework. If you have used backbone.js, you will like Slicks.
 
@@ -6,7 +6,7 @@ Slicks relies on the linkedin dust templating engine for server-side precompiled
 
 Slicks makes use of browserify for requiring modules, hence, it is a fan of browserify.
 
-#Slicks - Components
+##Components
 
 Slicks has the following:
 
@@ -14,5 +14,6 @@ Slicks has the following:
 * View
 * Controller
 * Router
+
 
 
