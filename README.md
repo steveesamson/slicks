@@ -15,5 +15,13 @@ Slicks has the following:
 * Controller
 * Router
 
+## Installation
 
+  npm install slicks --save
 
+## Usage
+       var Slicks = require('slicks')'
+       userModel = Slicks.Model({}),
+       usercollection = Slicks.Collection({}),
+       userView = Slicks.View();
+       
