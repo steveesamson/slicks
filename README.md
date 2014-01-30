@@ -20,8 +20,11 @@ Slicks has the following:
   npm install slicks --save
 
 ## Usage
-       var Slicks = require('slicks')'
+```
+   javascript
+
+   var Slicks = require('slicks')'
        userModel = Slicks.Model({}),
        usercollection = Slicks.Collection({}),
        userView = Slicks.View();
-       
+````
