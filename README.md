@@ -22,7 +22,7 @@ Slicks has the following:
 ## Usage
 ```javascript
 
-   var Slicks = require('slicks')'
+   var Slicks = require('slicks')
        userModel = Slicks.Model({}),
        usercollection = Slicks.Collection({}),
        userView = Slicks.View();
