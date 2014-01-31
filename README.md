@@ -5,22 +5,23 @@ Slicks is a simple Javascript MVC framework. If you have used backbone.js, you w
 ##Components
 
 Slicks has the following:
-* Model
-* Collection
-* View
-* Router
+* `Model`
+* `Collection`
+* `View`
+* `Router`
 
 
 ###Model
 This is basically any data of interest to you. Slicks Model has these properties and methods:
 ####Model Options
-There are two options(optional) to Slick Models. These are shown below usually passed as {url:'value',attributes:{}}:
+There are two options(optional) to Slick Models. These are shown below usually passed as `{url:'value',attributes:{}}`:
 
-**url:**This is the url of a REST endpoint(we will support actions too), usually on a server somewhere e.g '/user'.
+**`url:`**This is the url of a REST endpoint(we will support actions too), usually on a server somewhere e.g `'/user'`
 
-**attributes:**This describes the fields in the model(not enforced now but would be enforced) e.g {name:'foo',age:10}.
+**`attributes:`**This describes the fields in the model(not enforced now but would be enforced) e.g {name:'foo',age:10}.
 
 **sync:** *sync* is needed to remote to your REST endpoints. It takes 4 arguments: **url, method, data and callback**. You can override this in your model to do your custom persistence logic like so:
+
 ```javascript
     var myData = {},
         id = 0,
@@ -61,6 +62,7 @@ These are the exposed model functions, which should not be overridden unless you
 
 ####Model Events
 Slicks Model events are intuitive and so easy to use. You can even use own custom events. All you need to do is subscribe to an event or multiple events and provide callback and context like so:
+
 ```javascript
    var model = Slicks.Model({attributes:{name:'Tom'},url:'/user'});
    model.on('change',function(cmodel){
@@ -72,6 +74,7 @@ Slicks Model events are intuitive and so easy to use. You can even use own custo
    model.set('name','Paul').save();
 ```
 You can equally listen to changes to each of the model attributes like so:
+
 ```javascript
     model.on('name:change',function(){
         //Do stuffs
@@ -91,7 +94,9 @@ Slick collection has three (3) options(all but url are optional): url,sync and m
 **sync:** *sync* is needed to remote to your REST endpoints. It takes 4 arguments: **url, method, data and callback**. You can override this in your collection to do your custom persistence logic like so:
 
 ```javascript
+
     var userCollection = Slicks.Collection({
+
         sync:function(url,method,data,callback){
             switch(method)
             {
@@ -102,7 +107,7 @@ Slick collection has three (3) options(all but url are optional): url,sync and m
                     callback && callback(data);
                     break;
 
-                case 'delete'
+                case 'delete':
                     var model = Slicks.Model({attributes:data,url:this.url});
                     this.remove(model);
                     callback && callback(data);
@@ -135,19 +140,19 @@ These are the exposed collection functions, which should not be overridden unles
 Slicks Views are a sensible way of managing pieces of UI in a self-contained manner. The view expects all view templates in as  pre-compiled dust.js templates.
 ####View Options
 The following are the options available in the view:
-**events:**
+**events:** *events* gives us the opportunity to bind events to the view declaratively.
 
-**host**
+**host:** The *host* represents a dom or any valid selector, which will be the container for the view i.e the view will be appended to the host.
 
-**el:**
+**el:** *el* is a wrapper arround the template, usually an html tag i.e a dom e.g tr for table row, li for list item and so on.
 
-**model:**
+**model:** The *model* is always needed of the view is not a collection view but optional for collection views.
 
-**collection:**
+**collection:** The *collection* is mandatory when the view is a collection view.
 
-**template:**
+**template:**The *template* is usually the file name of the dust template from which the template was genetated. For instance, a dust template named 'user_row.dust' automatically compiles to 'user_row.js' and is registered as 'user_row'.
 
-**initialize:** *initialize* allows you to do prep the view. It is the first function to execute in the view, hence, it is the best place to register your events. A simple use case is as follows:
+**initialize:** *initialize* allows you to do view prep. It is the first function to execute in the view, hence, it is the best place to register your events. A simple use case is as follows:
 
 ```javascript
     var useRow = Slicks.View({
@@ -162,7 +167,16 @@ The following are the options available in the view:
 ####View Functions
 These are the exposed view functions, which should not be overridden unless you know what you are doing.
 
+**remove:** `*remove*` is usually called when the backing model for the view has been delete/destroyed. You will normally need not call this function unless you want a custom behaviour.
+
+**hide:** `*hide*` is used to hide the view for whatever reason. You can pass arguments like `*fadeOut, hide and slideUp*` to this function to control its behaviour.
+
+**show:** *show* is used to display the view if it was hidden for whatever reason. You can pass arguments like *fadeIn, show and slideDown* to this function to control its behaviour.
+
+**render:** *render*, when called, will add the view to the dom, displaying the state of its model. *render* should be overridden in view that display contents of collection.
+
 ###Router
+??
 
 ## Installation
 
@@ -172,17 +186,18 @@ These are the exposed view functions, which should not be overridden unless you 
 Let us assume a user management app. The users will have attributes like name and age for instance. Further, our users will be displayed in a table as shown below:
 
 ```html
-   <table class='users'>
-       <thead>
+
+    <table class='users'>
+      <thead>
          <tr>
             <th>Name</th>
-            <th>Age</th>
+            <th></th>
         </tr>
        </thead>
        <tbody>
-
        </tbody>
-   </table>
+    </table>
+
 ```
 
 The next thing is to write our row template(in dust.js), which will contain each user record. Let us think of a user table row, a simple dust.js template for it looks as shown:
@@ -191,10 +206,12 @@ The next thing is to write our row template(in dust.js), which will contain each
    <!--user_row.dust-->
    <td>{name}</td><td><a href='#' class='details'>details</a></td>
 ```
+
 **Note:**The above template must be compiled to javascript with dust compiler. The template above would be compiled into a user_row.js file and loaded in the head of your html file. Once that was done, the following Slick view will use the template like so:
 
 ```javascript
-   var userRow = Slicks.View({
+
+      var userRow = Slicks.View({
           //define host for user row
           host: '#user tbody',
           //define the template name, in this case, 'user_row'
@@ -215,15 +232,13 @@ The next thing is to write our row template(in dust.js), which will contain each
               this.model.on('destroy', this.remove, this);
               this.render();
 
-              var self = this;
-
           }
-   });
+      });
 ```
 
 ```javascript
 
-   var Slicks = require('slicks'),
+    var Slicks = require('slicks'),
        userCollection = Slicks.Collection({url:'/user'}),
        userTableView = Slicks.View({
             collection:userCollection,
