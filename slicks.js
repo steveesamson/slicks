@@ -637,6 +637,7 @@ module.exports = (function ($) {
                 fetch: fetch,
                 watch: watch,
                 add: append,
+                remove:destroyed,
                 create: create,
                 forEach: loop,
                 on: onEvent,
