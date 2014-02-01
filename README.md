@@ -233,38 +233,7 @@ The above compiles to `user.js`. The next thing is to write our row template(in 
 
 **Note:**The above template must be compiled to javascript with `dust compiler`. The template above would be compiled into a `user_row.js` file and loaded in the head of your html file. Once that was done, the following Slick view will use the template like so:
 
-```javascript
-
-      var userRowSkel = {
-          //define host for user row, the tbody of the user table
-          host: '#user tbody',
-          //define the template name, in this case, 'user_row'
-          template: 'user_row',
-          //define what wraps the template
-          el: 'tr',
-          //View events
-          events: {
-              'click:.details': 'showDetails',
-              'click:.remove':'delete'
-          },
-          //Handlers for view events
-          showDetails: function (e) {
-              e.preventDefault();
-              console.log('Details: ' + this.model.toJSON());
-          },
-          'delete': function (e) {
-              e.preventDefault();
-              this.model.destroy();
-          },
-          //View initialization
-          initialize: function () {
-              this.model.on('change', this.render, this);
-              this.model.on('destroy', this.remove, this);
-              this.render();
-
-          }
-      };
-```
+Now let us tie everything together as shown below(I believe it is clear as it is heavy on comments):
 
 ```javascript
 
@@ -306,11 +275,12 @@ The above compiles to `user.js`. The next thing is to write our row template(in 
                 rowView.render();
             },
             userRow:function(user){
+
                 //This creates a user row view, setting its model to the passed user model and returns it.
                 return Slicks.View({
                        model:user,
                       //define host for user row, the tbody of the user table
-                      host: '#user tbody',
+                      host: this.$el.find('tbody'),
                       //define the template name, in this case, 'user_row'
                       template: 'user_row',
                       //define what wraps the template
@@ -339,3 +309,9 @@ The above compiles to `user.js`. The next thing is to write our row template(in 
             }
        });
 ````
+
+#Test
+
+```cli
+    npm test
+```
