@@ -83,7 +83,7 @@ You can equally listen to changes to each of the model attributes like so:
 ###Collection
 Slicks Collection, in its simplest conception could be seen as an array of Slicks models.
 ####Collection Options
-Slick collection has three (3) options(all but `url` are optional): `url,sync and model`. If, however, there is need to use a `REST endpoint`, the `url` is needed. The options are specified as a map like `{url:'',model:}`. The sync may be overridden to provide custom persistence and retrieval.
+Slick collection has four (4) options(all but `url` are optional): `url,sync, comets and model`. If, however, there is need to use a `REST endpoint`, the `url` is needed. The options are specified as a map like `{url:'',model:}`. The sync may be overridden to provide custom persistence and retrieval.
 
 **`url:`**This is the url of a `REST endpoint`(we will support actions too), usually on a server somewhere e.g `'/user'`.
 
@@ -140,11 +140,12 @@ These are the exposed collection functions, which should not be overridden unles
 Slicks Views are a sensible way of managing pieces of UI in a self-contained manner. The view expects all view templates in as  pre-compiled `dust.js` templates.
 ####View Options
 The following are the options available in the view:
+
 **`events:`** *events* gives us the opportunity to bind events to the view declaratively. For instance given the following template:
 
 ```html
    <!--user_row.dust-->
-   <td>{name}</td><td><a href='#' class='details'>details</a></td>
+   <td>{name}</td><td><a href='#' class='details'>details</a>|<a href='#' class='remove'>delete</a></td>
 ```
 A view can bind event to the anchor with `class='details'` like this:
 ```javascript
@@ -166,7 +167,7 @@ A view can bind event to the anchor with `class='details'` like this:
             }
         });
 ```
-**We used click event in the sample above but we could have used any of `blur, focus etc.`**
+**We used click event in the sample above but we could have used any of `blur, focus etc`.**
 
 **`host:`** The *host* represents a dom or any valid selector, which will be the container for the view i.e the view will be appended to the host.
 
@@ -194,9 +195,9 @@ A view can bind event to the anchor with `class='details'` like this:
 ####View Functions
 These are the exposed view functions, which should not be overridden unless you know what you are doing.
 
-**`remove:`** `*remove*` is usually called when the backing model for the view has been delete/destroyed. You will normally need not call this function unless you want a custom behaviour.
+**`remove:`** *remove* is usually called when the backing model for the view has been delete/destroyed. You will normally need not call this function unless you want a custom behaviour.
 
-**`hide:`** `*hide*` is used to hide the view for whatever reason. You can pass arguments like *`fadeOut, hide and slideUp`* to this function to control its behaviour.
+**`hide:`** *hide* is used to hide the view for whatever reason. You can pass arguments like *`fadeOut, hide and slideUp`* to this function to control its behaviour.
 
 **`show:`** *show* is used to display the view if it was hidden for whatever reason. You can pass arguments like *`fadeIn, show and slideDown`* to this function to control its behaviour.
 
@@ -210,10 +211,10 @@ These are the exposed view functions, which should not be overridden unless you 
   npm install slicks --save
 ```
 ## Usage
-Let us assume a user management app. The users will have attributes like `name and age` for instance. Further, our users will be displayed in a table as shown below:
+Let us assume a user management view. The users will have attributes like `name and age` for instance. Further, our users will be displayed in a table as shown below:
 
 ```html
-    <table class='users'>
+    <!--user.dust table template-->
       <thead>
          <tr>
             <th>Name</th>
@@ -222,43 +223,47 @@ Let us assume a user management app. The users will have attributes like `name a
        </thead>
        <tbody>
        </tbody>
-    </table>
 ```
-
-The next thing is to write our row template(in `dust.js`), which will contain each user record. Let us think of a user table row, a simple `dust.js` template for it looks as shown:
+The above compiles to `user.js`. The next thing is to write our row template(in `dust.js`), which will contain each user record. Let us think of a user table row, a simple `dust.js` template for it looks as shown:
 
 ```html
    <!--user_row.dust-->
-   <td>{name}</td><td><a href='#' class='details'>details</a></td>
+   <td>{name}</td><td><a href='#' class='details'>details</a>|<a href='#' class='remove'>delete</a></td>
 ```
 
-**Note:**The above template must be compiled to javascript with dust compiler. The template above would be compiled into a user_row.js file and loaded in the head of your html file. Once that was done, the following Slick view will use the template like so:
+**Note:**The above template must be compiled to javascript with `dust compiler`. The template above would be compiled into a `user_row.js` file and loaded in the head of your html file. Once that was done, the following Slick view will use the template like so:
 
 ```javascript
 
-      var userRow = Slicks.View({
-          //define host for user row
+      var userRowSkel = {
+          //define host for user row, the tbody of the user table
           host: '#user tbody',
           //define the template name, in this case, 'user_row'
           template: 'user_row',
           //define what wraps the template
           el: 'tr',
+          //View events
           events: {
-              'click:.details': 'showDetails'
+              'click:.details': 'showDetails',
+              'click:.remove':'delete'
           },
+          //Handlers for view events
           showDetails: function (e) {
               e.preventDefault();
-
-              console.log(this.model.get('name') + ' was clicked.');
-              this.hide();
+              console.log('Details: ' + this.model.toJSON());
           },
+          'delete': function (e) {
+              e.preventDefault();
+              this.model.destroy();
+          },
+          //View initialization
           initialize: function () {
               this.model.on('change', this.render, this);
               this.model.on('destroy', this.remove, this);
               this.render();
 
           }
-      });
+      };
 ```
 
 ```javascript
@@ -269,6 +274,8 @@ The next thing is to write our row template(in `dust.js`), which will contain ea
             collection:userCollection,
             //specify which dom hosts this view e.g body
             host:'body',
+            el:'table',
+            template:'user',
             initialize: function () {
                 /***
                 Collection Events e.g.
@@ -279,18 +286,56 @@ The next thing is to write our row template(in `dust.js`), which will contain ea
                 change:one or more of the models in the collection was modified
 
                 ***/
-                this.collection.on('add', this.arrival, this);
-                this.collection.on('reset', this.render, this);
-                this.collection.on('remove', this.render, this);
+                this.collection.on('add', this.addRow, this);
+                this.collection.on('reset', this.refresh, this);
             },
             start: function () {
+                this.render();
                 this.collection.fetch();
             },
-            arrival: function (mdl) {
-                var tpl = this.defs();
-                tpl.model = mdl;
-                Slicks.View(tpl);
+            refresh:function(){
+
+                //Save reference to view
+                var self = this;
+                this.forEach(function(user){
+                    self.addRow(user);
+                })
             },
-            template:'user_row',//This takes the template's file name by default
+            addRow: function (user) {
+                var rowView = this.userRow(user);
+                rowView.render();
+            },
+            userRow:function(user){
+                //This creates a user row view, setting its model to the passed user model and returns it.
+                return Slicks.View({
+                       model:user,
+                      //define host for user row, the tbody of the user table
+                      host: '#user tbody',
+                      //define the template name, in this case, 'user_row'
+                      template: 'user_row',
+                      //define what wraps the template
+                      el: 'tr',
+                      //View events to be bound to doms
+                      events: {
+                          'click:.details': 'showDetails',
+                          'click:.remove':'delete'
+                      },
+                      //Handlers for view events
+                      showDetails: function (e) {
+                          e.preventDefault();
+                          console.log('Details: ' + this.model.toJSON());
+                      },
+                      'delete': function (e) {
+                          e.preventDefault();
+                          this.model.destroy();
+                      },
+                      //View initialization
+                      initialize: function () {
+                          this.model.on('change', this.render, this);
+                          this.model.on('destroy', this.remove, this);
+                      }
+                  });
+
+            }
        });
 ````

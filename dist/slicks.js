@@ -388,8 +388,9 @@ module.exports = (function ($) {
             }
         }
     };
-    var Model = function (options) {
-            var attributes = options.attributes || {},
+    var Model = function (opts) {
+            var options = opts || {},
+            attributes = options.attributes || {},
                 url = options.url || '',
                 events = {},
                 dirty_attributes = {},
@@ -662,8 +663,6 @@ module.exports = (function ($) {
                             var dom = event_targets[1];
                             evt = evt && evt.trim();
                             dom = dom && dom.trim();
-//                            view_instance.$el.on(evt, dom, $.proxy(view_instance, handler));
-//                            self.$el.on(evt, dom, $.proxy(self[handler],self));
                             self.$el.on(evt, dom, $.proxy(self, handler));
 
                         });
@@ -700,6 +699,8 @@ module.exports = (function ($) {
 
                     delete  options['tmpl'];
                     delete  actions['tmpl'];
+                    delete  options['render'];
+                    delete  actions['render'];
 
                     /*examples events
                      events = {
@@ -715,15 +716,16 @@ module.exports = (function ($) {
                      }*/
                     this.events = {};
                     this.host = options.host || '#content';
+                    this.class = options.class || false;
+                    this.id = options.id || false;
                     this.el = options.el || '';
-                    this.model = options.model || null;
+                    this.model = options.model || Model();
                     this.collection = options.collection || null;
                     this.template = options.template || '';
                     this.initialize = (options.initialize && $.isFunction(options.initialize)) ? options.initialize : function () {
                         console.log("View initialized!");
                     };
-                    this.render = (options.render && $.isFunction(options.render)) ? options.render : function (mdl) {
-                        console.log(mdl);
+                    this.render = function (mdl) {
                         this.tmpl(function (str) {
 
                             if (mdl) {
@@ -736,11 +738,13 @@ module.exports = (function ($) {
                     };
                     $.extend(this.events, (options.events || {}));
 
-                    if (!this.el && this.model) {
+                    if (!this.el) {
                         console.log('Note that el is undefined. It must be defined.');
                         return null;
                     }
                     this.$el = $('<' + this.el + '/>');
+                    (this.class && this.$el.addClass(this.class));
+                    (this.id && this.$el.attr('id', this.id));
                     this.$host = $(this.host);
 
                     $.extend(this, actions);
