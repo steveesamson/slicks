@@ -790,7 +790,7 @@ module.exports = (function ($) {
 
     return {
         Model: Model,
-        Collections: Collection,
+        Collection: Collection,
         View: View,
         Router: Router
     };

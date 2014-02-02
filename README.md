@@ -1,6 +1,6 @@
 #Slicks
 
-Slicks is a simple Javascript MVC framework. If you have used backbone.js, you will like Slicks.It relies on the linkedin dust templating engine for server-side precompiled templates. It makes use of browserify for requiring modules, hence, it is a fan of browserify.
+Slicks is a simple javascript MVC framework. It relies on the jquery, linkedin dust templating engine for server-side precompiled templates. It makes use of browserify for requiring modules in the client, hence, it is a fan of browserify.
 
 ##Components
 
@@ -267,7 +267,7 @@ Now let us tie everything together as shown below(I believe it is clear as it is
 
                 //Save reference to view
                 var self = this;
-                this.forEach(function(user){
+                this.collection.forEach(function(user){
                     self.addRow(user);
                 })
             },
