@@ -1,6 +1,6 @@
 #Slicks
 
-Slicks is a simple javascript MVC framework. It relies on the jquery, linkedin dust templating engine for server-side precompiled templates. It makes use of browserify for requiring modules in the client, hence, it is a fan of browserify.
+Slicks is a simple javascript MVC framework. It relies on jquery, dust templating engine for server-side precompiled templates and makes use of browserify for requiring modules in the client, hence, it is a fan of browserify.
 
 ##Components
 
