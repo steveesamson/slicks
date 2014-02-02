@@ -1,7 +1,7 @@
 /**
  * Created by steve samson on 1/30/14.
  */
-var Slicks = require('../dist/slicks'),
+var Slicks = require('../slicks'),
     model = Slicks.Model({url:'/users',attributes:{name:'steve',age:25}}),
     should = require('chai').should();
 

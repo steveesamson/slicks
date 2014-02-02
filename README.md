@@ -243,6 +243,7 @@ Now let us tie everything together as shown below(I believe it is clear as it is
             collection:userCollection,
             //specify which dom hosts this view e.g body
             host:'body',
+            //define what wraps the template
             el:'table',
             template:'user',
             initialize: function () {
@@ -276,7 +277,8 @@ Now let us tie everything together as shown below(I believe it is clear as it is
             },
             userRow:function(user){
 
-                //This creates a user row view, setting its model to the passed user model and returns it.
+                //This creates a user row view,
+                //setting its model to the passed user model and returns it.
                 return Slicks.View({
                        model:user,
                       //define host for user row, the tbody of the user table
