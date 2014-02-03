@@ -204,7 +204,29 @@ These are the exposed view functions, which should not be overridden unless you 
 **`render:`** *render*, when called, will add the view to the dom, displaying the state of its model. *render* should be overridden in view that display contents of collection.
 
 ###Router
-??
+Slick Router is based on a fork of Pathjs(details at https://github.com/mtrpcic/pathjs), a wonderful piece of module for mapping routes and for deep-linking amongst pages, handling browsers history. In its simplest form, it allows you define your routes as so:
+```javascript
+
+    //Defining application routes
+    var Router = Slicks.Router({
+        '#/comments': function () {
+            alert("Comments!");
+        },
+        '#/users': function () {
+            userTableView.start();
+        },
+        //Application entry point
+        root: '#/users'
+    });
+    //When no route was matched
+    Router.help(function () {
+        alert(
+            '404: Sorry, page not found'
+        );
+    });
+    //This is important. Without this, routing will not work.
+    Router.start();
+```
 
 ## Installation
 ```cli
@@ -310,10 +332,33 @@ Now let us tie everything together as shown below(I believe it is clear as it is
 
             }
        });
+
+       //Defining application routes
+           var Router = Slicks.Router({
+               '#/comments': function () {
+                   alert("Comments!");
+               },
+               '#/users': function () {
+                   userTableView.start();
+               },
+               //Application entry point
+               root: '#/users'
+           });
+           //When no route was matched
+           Router.help(function () {
+               alert(
+                   '404: Sorry, page not found'
+               );
+           });
+           //This is important. Without this, routing will not work.
+           Router.start();
 ````
 
-#Test
+##Test
 
 ```cli
     npm test
 ```
+## Release History
+* 0.1.0 Initial release
+
