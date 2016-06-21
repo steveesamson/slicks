@@ -30,7 +30,8 @@
     "url": "https://github.com/steveesamson/slicks/issues"
   },
   "dependencies": {
-    "jquery": "~2.1.0"
+    "jquery": "~2.1.0",
+    "hashids": "1.0.1"
   },
   "devDependencies": {
     "mocha": "~1.17.1",

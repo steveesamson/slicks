@@ -1,198 +1,142 @@
-/**
- * Created by steve samson on 1/29/14.
+/*
+ *  * Created by steve samson on 1/9/14.
+ *  Updated on June 21, 2016.
  */
-/**
- * Created by steve samson on 1/9/14.
- */
+if(!window.$3$$10N) require('../libs/session');
 
+if(!window.dust) require('../libs/dust-core');
 
 module.exports = (function ($) {
 
-//    GET   :    /:controller/find        => findAll()
-//    GET   :    /:controller/find/:id        => find(id)
-//    POST  :    /:controller/create        => create(id)
-//    PUT   :    /:controller/update/:id        => update(id)
-//    DELETE:    /:controller/destroy/:id    => destroy(id)
+//    GET   :    /:controller        => find()
+//    GET   :    /:controller/:id    => find(id)
+//    POST  :    /:controller        => create()
+//    PUT   :    /:controller/:id    => update(id)
+//    DELETE:    /:controller/:id    => destroy(id)
+
+    if(!window.jQuery){
+        window.jQuery = window.$ = $;
+    }
 
 
-    var setup_socket = function (io) {
-
-            var self = this;
-
-            // We'll be adding methods to `io.SocketNamespace.prototype`, the prototype for the
-            // Socket instance returned when the browser connects with `io.connect()`
-            var Socket = io.SocketNamespace;
+    if (!$) {
+        throw Error("Include jQuery on your page to use Slicks-mvc");
+    }
 
 
-            /**
-             * Simulate a GET request to sails
-             * e.g.
-             *    `socket.get('/user/3', Stats.populate)`
-             *
-             * @param {String} url    ::    destination URL
-             * @param {Object} params ::    parameters to send with the request [optional]
-             * @param {Function} cb   ::    callback function to call when finished [optional]
-             */
 
-            Socket.prototype.get = function (url, data, cb) {
-                return this.request(url, data, cb, 'get');
-            };
+    require('../libs/functions')($);
+    var Crypt = require('../libs/tiny-tea'),
+        transportMode = {AJAX: 'AJAX', SOCKET_IO: 'SOCKET_IO'},
 
-
-            /**
-             * Simulate a POST request to sails
-             * e.g.
-             *    `socket.post('/event', newMeeting, $spinner.hide)`
-             *
-             * @param {String} url    ::    destination URL
-             * @param {Object} params ::    parameters to send with the request [optional]
-             * @param {Function} cb   ::    callback function to call when finished [optional]
-             */
-
-            Socket.prototype.post = function (url, data, cb) {
-                return this.request(url, data, cb, 'post');
-            };
-
-
-            /**
-             * Simulate a PUT request to sails
-             * e.g.
-             *    `socket.post('/event/3', changedFields, $spinner.hide)`
-             *
-             * @param {String} url    ::    destination URL
-             * @param {Object} params ::    parameters to send with the request [optional]
-             * @param {Function} cb   ::    callback function to call when finished [optional]
-             */
-
-            Socket.prototype.put = function (url, data, cb) {
-                return this.request(url, data, cb, 'put');
-            };
-
-
-            /**
-             * Simulate a DELETE request to sails
-             * e.g.
-             *    `socket.delete('/event', $spinner.hide)`
-             *
-             * @param {String} url    ::    destination URL
-             * @param {Object} params ::    parameters to send with the request [optional]
-             * @param {Function} cb   ::    callback function to call when finished [optional]
-             */
-
-            Socket.prototype['delete'] = function (url, data, cb) {
-                return this.request(url, data, cb, 'delete');
-            };
-
-
-            /**
-             * Simulate HTTP over Socket.io
-             * @api private :: but exposed for backwards compatibility w/ <= sails@~0.8
-             */
-
-            Socket.prototype.request = request;
-            function request(url, data, cb, method) {
-
-                var socket = this;
-
-                var usage = 'Usage:\n socket.' +
-                    (method || 'request') +
-                    '( destinationURL, dataToSend, fnToCallWhenComplete )';
-
-                // Remove trailing slashes and spaces
-                url = url.replace(/^(.+)\/*\s*$/, '$1');
-
-                // If method is undefined, use 'get'
-                method = method || 'get';
-
-
-                if (typeof url !== 'string') {
-                    throw new Error('Invalid or missing URL!\n' + usage);
-                }
-
-                // Allow data arg to be optional
-                if (typeof data === 'function') {
-                    cb = data;
-                    data = {};
-                }
-
-                // Build to request
-                var json = window.io.JSON.stringify({
-                    url: url,
-                    data: data
-                });
-
-
-                // Send the message over the socket
-                socket.emit(method, json, function afterEmitted(result) {
-
-                    var parsedResult = result;
-
-                    if (result && typeof result === 'string') {
-                        try {
-                            parsedResult = window.io.JSON.parse(result);
-                        } catch (e) {
-                            if (typeof console !== 'undefined') {
-                                console.warn("Could not parse:", result, e);
-                            }
-                            throw new Error("Server response could not be parsed!\n" + result);
-                        }
-                    }
-
-                    // TODO: Handle errors more effectively
-                    if (parsedResult === 404) throw new Error("404: Not found");
-                    if (parsedResult === 403) throw new Error("403: Forbidden");
-                    if (parsedResult === 500) throw new Error("500: Server error");
-
-                    cb && cb(parsedResult);
-
-                });
-            }
-
-            var socket = io.connect();
-
-
-            socket.on('connect', function socketConnected() {
-
-                console.log('Socket connection established!');
-                // Listen for Comet messages from Sails
-                socket.on('message', self.comets);
-            });
-            self.socket = socket;
-        },
         ajax = function (url, method, data, cb) {
-            console.log('url:' + url + ' method:' + method + ' data:' + JSON.stringify(data));
+
             $.ajax({
                 type: method,
+                beforeSend: function (xhr) {
+                    $('.data-connecting').show();
+                    Session.isAuthenticated() && xhr.setRequestHeader('x-csrf-token', Session.user().token || '');
+                },
                 url: url,
                 data: data,
-                success: cb,
+                success: function (res) {
+                    $('.data-connecting').hide();
+                    cb(res);
+                },
+                error: function () {
+                    $('.data-connecting').hide();
+                },
                 dataType: 'json'
             });
         },
         _sync = function (method, model, cb) {
+
+
             var url = null, data = {};
             switch (method) {
                 case 'post':
-                    url = model.url + '/create';
+                    url = model.url;
                     data = model.toObject();
                     break;
                 case 'put':
-                    url = model.url + '/update/' + model.get('id');
-                    data = model.dirty_attributes;
+                    url = model.url + '/' + model.get('id');
+                    data = model.dirts();
+                    var last_updated = model.get('last_updated');
+                    if (last_updated) {
+                        data['last_updated'] = last_updated;
+                    }
                     break;
                 case 'delete':
-                    url = model.url + '/destroy/' + model.get('id');
+                    url = model.url + '/' + model.get('id');
+                    var last_updated = model.get('last_updated');
+                    if (last_updated) {
+                        data['last_updated'] = last_updated;
+                    }
                     break;
                 case 'get':
                     url = model.url;
-                    data = model.query;
+                    data = model.query || {};
                     break;
                 default:
                     console.log('Unknown method: ' + method);
                     return;
             }
-            this.sync(url, method, data, cb);
 
+            this.sync(url, method, data, function (mdl) {
+                if ($.happy(mdl)) {
+
+                    cb && cb(false, mdl);
+                } else {
+                    var message = mdl.text || mdl.error;
+                    message = message.replace('ER_SIGNAL_EXCEPTION:', '');
+                    cb && cb(message);
+                }
+            });
+        },
+        resolveCall = function (url, params, cb) {
+
+            var len = arguments.length;
+
+            if (len < 1) {
+                throw Error("Invalid arguments error");
+            }
+
+            switch (len) {
+                case 3:
+                    if (typeof cb !== 'function') {
+                        throw Error("Invalid arguments error; expecting a function but found a " + typeof cb);
+                    }
+                    break;
+                case 2:
+                    cb = params;
+
+                    if (typeof cb !== 'function') {
+                        throw Error("Invalid arguments error; expecting a function but found a " + typeof cb);
+                    }
+                    params = false;
+                    break;
+                case 1:
+                    cb = url;
+
+                    if (typeof cb !== 'function') {
+                        throw Error("Invalid arguments error; expecting a function but found a " + typeof cb);
+                    }
+                    params = false;
+                    url = false;
+                    break;
+            }
+
+            var attr = params || this.toObject(),
+                mdl = Model((url || this.url), attr, this.transport);
+            mdl.query = attr;
+            return {model: mdl, callback: cb};
+        },
+        attachEvent = function (evt, handler, context) {
+            handler['context'] = context;
+            if (!this[evt]) {
+                this[evt] = [];
+            }
+            this[evt].push(handler);
         },
         Path = {
             'version': "0.8.4",
@@ -277,6 +221,13 @@ module.exports = (function ($) {
                 return null;
             },
             'dispatch': function (passed_route) {
+                if (passed_route.indexOf('%') === -1) {
+                    passed_route = passed_route.replace(/#\//g, '');
+                    var path = passed_route.substr(0, passed_route.indexOf('/') + 1),
+                        rem = passed_route.substr(path.length);
+                    passed_route = '#/' + path + encodeURIComponent(rem);
+                }
+
                 var previous_route, matched_route;
                 if (Path.routes.current !== passed_route) {
                     Path.routes.previous = Path.routes.current;
@@ -303,7 +254,7 @@ module.exports = (function ($) {
             'listen': function () {
                 var fn = function () {
                     Path.dispatch(location.hash);
-                }
+                };
 
                 if (location.hash === "") {
                     if (Path.routes.root !== null) {
@@ -319,6 +270,7 @@ module.exports = (function ($) {
                     setInterval(fn, 50);
                 }
 
+
                 if (location.hash !== "") {
                     Path.dispatch(location.hash);
                 }
@@ -330,6 +282,16 @@ module.exports = (function ($) {
                     this.do_enter = [];
                     this.do_exit = null;
                     this.params = {};
+                    this.query = function () {
+                        var q = this.params['query'];
+
+                        if (q) {
+                            q = decodeURIComponent(q);
+                            q = Crypt.decrypt(q, Session.appName());
+                            return q ? JSON.parse(q) : q;
+                        }
+                        return q;
+                    };
                     Path.routes.defined[path] = this;
                 }
             },
@@ -388,295 +350,539 @@ module.exports = (function ($) {
             }
         }
     };
-    var Model = function (opts) {
-            var options = opts || {},
-            attributes = options.attributes || {},
-                url = options.url || '',
-                events = {},
-                dirty_attributes = {},
+    var Model = function (_url, _attributes, _socket) {
+
+            var events = {},
+                Hashid = require("hashids"),
+                hash = new Hashid("_53cr3t3-+", 5),
                 fire = function (evt, data) {
 
                     var cntx = null;
                     if (events[evt]) {
                         if (data) {
-                            events[evt].forEach(function (handler) {
-                                cntx = handler['context'];
-                                handler.call(cntx, data);
+                            $.each(events[evt], function () {
+                                cntx = this['context'];
+                                this.call(cntx, data);
                             });
+
                         } else {
-                            events[evt].forEach(function (handler) {
-                                cntx = handler['context'];
-                                handler.call(cntx);
+                            $.each(events[evt], function () {
+                                cntx = this['context'];
+                                this.call(cntx);
                             });
+
                         }
 
                     }
 
                 },
-                attachEvent = function (evt, handler, context) {
-                    handler['context'] = context;
-                    if (!events[evt]) {
-                        events[evt] = [];
-                    }
-                    events[evt].push(handler);
+                dirty_attributes = {},
+                attributes = _attributes || {},
+                _Model = function () {
+                    this.url = _url || '';
+                    this.model_name = this.url.replace(/\//g, '');
+                    this.transport = _socket ? transportMode.SOCKET_IO : transportMode.AJAX;
+                };
+            _Model.prototype = {
+                has: function (attr) {
+                    return attributes.hasOwnProperty(attr);
                 },
-                get = function (attr) {
+                params: function (param) {
+                    var enc = Crypt.encrypt(param || attributes, Session.appName());
+                    enc = encodeURIComponent(enc);
+                    return enc;
+                },
+                hash: function (_hash) {
+                    if (_hash) {
+                        return hash.decode(_hash);
+                    } else {
+                        return hash.encode(this.getInt('id'));
+                    }
+                },
+                get: function (attr) {
                     return attributes[attr];
                 },
-                set = function (key, value) {
+                getInt: function (attr) {
+                    var val = attributes[attr];
+                    return parseInt(val);
+                },
+                getFloat: function (attr) {
+                    var val = attributes[attr];
+                    return parseFloat(val);
+                },
+                set: function (key, value) {
                     attributes[key] = value;
                     dirty_attributes[key] = value;
-                    this.attributes = attributes;
-                    this.dirty_attributes = dirty_attributes;
                     return this;
                 },
-                save = function () {
+                change: function (k, v) {
+                    this.set(k, v).fire('change');
+                    return this;
+                },
+                unset: function (attr) {
+                    delete attributes[attr];
+                    return this;
+                },
+                populate: function (attrs) {
+
+                    for (var k in attrs) {
+                        this.set(k, attrs[k]);
+                    }
+                    return this;
+                },
+                fire: function (event) {
+                    fire(event, this);
+                    return this;
+                },
+                login: function (cb) {
+                    var mdl = Model(this.url + '/login', attributes, this.transport);
+                    _sync.call(mdl, 'post', mdl, cb);
+                },
+                unlink: function (params, cb) {
+                    var mdl = Model(this.url + '/unlink', params, this.transport);
+                    _sync.call(mdl, 'post', mdl, cb);
+                    return this;
+                },
+                fetch: function (url, params, cb) {
+                    var fnbody = resolveCall.apply(this, arguments);
+                    _sync.call(fnbody.model, 'get', fnbody.model, fnbody.callback);
+                    return this;
+                },
+                post: function (url, params, cb) {
+                    var fnbody = resolveCall.apply(this, arguments);
+                    _sync.call(fnbody.model, 'post', fnbody.model, fnbody.callback);
+                    return this;
+                },
+                save: function (cb) {
                     var method = attributes.id ? 'put' : 'post',
                         self = this;
 
-                    _sync.call(this, method, this, function (mdl) {
-                        delete self.attributes;
-                        delete self.dirty_attributes;
-                        attributes = mdl;
+                    _sync.call(this, method, this, function (e, mdl) {
+                        if (!e) {
+                            if (method === 'put') {
+                                for (var attr in mdl) {
+                                    attributes[attr] = mdl[attr];
+                                }
+                                for (var key in dirty_attributes) {
+                                    fire(key + ':change');
+                                }
 
-                        if (method === 'put') {
-                            for (var key in dirty_attributes) {
-                                fire(key + ':change');
+                                fire('change', self);
+                                dirty_attributes = {};
+
+                                if (cb && $.isFunction(cb)) {
+                                    cb($.makeName(self.model_name) + ' was successfully updated.', 'success');
+                                } else {
+                                    $.notify($.makeName(self.model_name) + ' was successfully updated.', 'success');
+                                }
+
+
+                            } else if (method === 'post') {
+                                attributes = mdl;
+                                self.isNew = true;
+                                fire('created', self);
+                                if (cb && $.isFunction(cb)) {
+
+                                    cb($.makeName(self.model_name) + ' was successfully created.', 'success');
+
+                                } else {
+                                    $.notify($.makeName(self.model_name) + ' was successfully created.', 'success');
+                                }
                             }
-                            fire('change', self);
-
-                            dirty_attributes = {};
-                        } else if (method === 'post') {
-                            fire('created', self);
+                        } else {
+                            $.notify(e, 'error');
                         }
 
                     });
 
                     return this;
                 },
-                destroy = function () {
+                destroy: function (cb) {
                     var self = this;
-                    _sync.call(this, 'delete', this, function (mdl) {
-                        fire('destroy', self);
+                    if (!this.getInt('id')) {
+                        this.fire('destroy');
+                        cb && cb($.makeName(self.model_name) + ' was successfully deleted.', 'success');
+                        return;
+                    }
+                    _sync.call(this, 'delete', this, function (e, mdl) {
+                        if (!e) {
+                            var deleted = parseInt(mdl.affectedRows);
+                            if (deleted) {
+                                fire('destroy', self);
+                                //cb && $.isFunction(cb) && cb();
+                                if (cb && $.isFunction(cb)) {
+                                    cb($.makeName(self.model_name) + ' was successfully deleted.', 'success');
+                                } else {
+                                    $.notify($.makeName(self.model_name) + ' was successfully deleted.', 'success');
+                                }
+
+
+                            }
+                        }
                     });
                 },
-                toObject = function () {
+                toObject: function () {
                     return attributes;
                 },
-                toJSON = function () {
+                dirts: function () {
+                    return dirty_attributes;
+                },
+                toJSON: function () {
                     return JSON.stringify(attributes);
                 },
-                onEvent = function (event, handler, context) {
+                reset: function () {
+                    attributes = {};
+                    fire('change', this);
+                    return this;
+                },
+                on: function (event, handler, context) {
 
                     if (event && event.indexOf(',') != -1) {
                         var evts = event.split(',');
-                        evts.forEach(function (v) {
+                        $.each(evts, function () {
+                            attachEvent.call(events, $.trim(this), handler, context);
+                        });
 
-                            attachEvent(v.trim(), handler, context);
-                        })
                     } else {
-                        attachEvent(event.trim(), handler, context);
+                        attachEvent.call(events, $.trim(event), handler, context);
                     }
 
                 },
-                synchronize = function (url, method, data, cb) {
+                sync: function (url, method, data, cb) {
                     ajax(url, method, data, cb);
-                };
-
-            return{
-                _init_: function () {
-
-                    this.url = url;
-                    return this;
-                },
-                get: get,
-                set: set,
-                save: save,
-                destroy: destroy,
-                toObject: toObject,
-                toJSON: toJSON,
-                on: onEvent,
-                sync: synchronize
-
-            }._init_();
+                }
+            };
+            return new _Model();
         },
-        Collection = function (options) {
-
-            var url = options.url || '',
-                events = {},
+        Collection = function (_url, _transport) {
+            var events = {},
+                changeEventListeners = [],
                 fire = function (evt, data) {
 
                     var cntx = null;
                     if (events[evt]) {
                         if (data) {
-                            events[evt].forEach(function (handler) {
-                                cntx = handler['context'];
-                                handler.call(cntx, data);
+
+                            $.each(events[evt], function () {
+                                cntx = this['context'];
+                                this.call(cntx, data);
                             });
+
                         } else {
-                            events[evt].forEach(function (handler) {
-                                cntx = handler['context'];
-                                handler.call(cntx);
+                            $.each(events[evt], function () {
+                                cntx = this['context'];
+                                this.call(cntx);
                             });
+
                         }
                     }
                 },
-                attachEvent = function (evt, handler, context) {
-                    handler['context'] = context;
-                    if (!events[evt]) {
-                        events[evt] = [];
-                    }
-                    events[evt].push(handler);
-                },
-                models = [],
-                create = function (mdl) {
-                    if (!mdl.toObject) {
-                        mdl = Model(mdl);
-                    }
-                    mdl.on('created', append, this);
-                    mdl.save();
-                    return this;
-                },
-                watch = function () {
-                    if (!window.io) {
-                        console.log('NO socket.io.js! You need to include the socket.io.js on your page in order to watch realtime commets... falling back to AJAX');
-                        return;
-                    }
-                    setup_socket.call(this, window.io);
-                    this.transport = 'SOCK_IO';
-                    this.socket.get(this.url + '/subscribe');
-                    return this;
-                },
-                fetch = function (q) {
-                    var self = this,
-                        q = q || {},
-                        load = {};
+                models = {
+                    list: [],
+                    map: {},
+                    add: function (_koll, mdl) {
+                        if (mdl) {
 
-                    load['query'] = q;
+                            if (this.map[mdl.get('id')]) {
 
-                    $.extend(load, {url: url});
-                    _sync.call(this, 'get', load, function (mdls) {
+                                var old = this.map[mdl.get('id')];
+                                old.populate(mdl.toObject());
+                                old.fire('change');
+                                //In case; already exists.
+                                return;
+                            }
+                            mdl.on('destroy', _koll.remove, _koll);
+                            mdl.on('change', model_changed, _koll);
+                            !mdl.get('id') && mdl.set('id', $.uid());
+                            mdl.isNew = true;
+                            this.list.push(mdl);
+                            this.map[mdl.get('id')] = mdl;
+                            _koll.length = this.list.length;
+                            fire('add', mdl);
+                            collectionChanged.call(_koll, 'add');
+                        }
+                    },
+                    get: function (id) {
+                        return this.map[id];
+                    },
+                    remove: function (_koll, id) {
 
-                        mdls.forEach(function (m) {
-                            var mdl = Model({attributes: m, 'url': url});
-                            push.call(self, mdl);
-                        });
+                        var mdl = this.map[id],
+                            index = this.list.indexOf(mdl);
+                        if (mdl && index !== -1) {
+                            this.list.splice(index, 1);
+                            delete this.map[id];
+                            _koll.length = this.list.length;
+                            fire('remove', mdl);
+                            collectionChanged.call(_koll, 'remove');
+                        }
+                    },
+                    populate: function (_koll, mdls, _url, _transport) {
+                        this.list = [];
+                        this.map = {};
+                        _koll.length = 0;
+
+                        for (var k = 0; k < mdls.length; ++k) {
+                            var mdl = Model(_url, mdls[k], _transport);
+                            mdl.on('destroy', _koll.remove, _koll);
+                            mdl.on('change', model_changed, _koll);
+                            !mdl.get('id') && mdl.set('id', $.uid());
+                            mdls[k] = mdl;
+                            this.map[mdl.get('id')] = mdl;
+                        }
+
+                        this.list = mdls;
+                        _koll.length = this.list.length;
+                        _koll.fetched = true;
+
                         fire('reset');
-                    });
-                    return this;
+                        collectionChanged.call(_koll, 'reset');
+                    },
+                    reset: function (_koll) {
+                        this.list = [];
+                        this.map = {};
+                        _koll.length = this.list.length;
+                        fire('reset');
+                        collectionChanged.call(_koll, 'reset');//added
+                    }
                 },
                 model_changed = function (mdl) {
                     fire('change');
                 },
-                destroyed = function (mdl) {
-                    var index = models.indexOf(mdl);
-                    if (index != -1) {
-                        models.splice(index, 1);
-                        this.length = models.length;
-                        fire('remove', mdl);
-                    }
-
-                },
                 push = function (mdl) {
-                    mdl.on('destroy', destroyed, this);
-                    mdl.on('change', model_changed, this);
-                    models.push(mdl);
-                    this.length = models.length;
-
+                    models.add(this, mdl);
                 },
-                append = function (mdl) {
-                    if (!mdl.toObject) {
-                        mdl = Model(mdl);
+                collectionChanged = function (type) {
+                    for (var i = 0; i < changeEventListeners.length; ++i) {
+                        changeEventListeners[i] && changeEventListeners[i]['notifyChange'].call(changeEventListeners[i], this, type);
                     }
-                    push.call(this, mdl);
-                    fire('add', mdl);
+                },
+                _List = function () {
+                    this.length = 0;
+                    this.url = _url || '';
+                    this.transport = _transport ? transportMode.SOCKET_IO : transportMode.AJAX;
+                };
+            _List.prototype = {
+                notify: function (listener) {
+                    changeEventListeners.push(listener);
+                },
+                fetch: function (q) {
+                    var self = this,
+                        load = {};
+                    if (q) {
+                        load['query'] = q || {};
+                    }
+
+                    $.extend(load, {url: this.url});
+                    _sync.call(this, 'get', load, function (e, mdls) {
+                        if (!e) {
+                            mdls = !$.isArray(mdls) ? [mdls] : mdls;
+                            models.populate(self, mdls, self.url, self.transport);
+                        }
+                    });
                     return this;
                 },
-                loop = function (cb) {
-                    models.forEach(function (c) {
-                        cb && cb(c);
+                reset: function () {
+                    models.reset(this);
+                    return this;
+                },
+                add: function (mdl) {
+                    if (!mdl.toObject) {
+                        mdl = Model(this.url, mdl, this.transport);
+                    }
+                    push.call(this, mdl);
+                    return this;
+
+                },
+                remove: function (mdl) {
+                    models.remove(this, mdl.get('id'));
+                },
+                create: function (mdl, cb) {
+
+                    if (!mdl.toObject) {
+                        mdl = Model(this.url, mdl, this.transport === transportMode.SOCKET_IO);
+                    }
+                    mdl.on('created', this.add, this);
+                    mdl.save(cb);
+                    return this;
+                },
+                forEach: function (cb) {
+                    $.each(models.list, function () {
+                        this && cb && cb(this);
                     });
                 },
-                onEvent = function (event, handler, context) {
+                on: function (event, handler, context) {
 
                     if (event && event.indexOf(',') != -1) {
                         var evts = event.split(',');
-                        evts.forEach(function (v) {
 
-                            attachEvent(v.trim(), handler, context);
-                        })
+                        $.each(evts, function () {
+                            attachEvent.call(events, $.trim(this), handler, context);
+                        });
                     } else {
-                        attachEvent(event.trim(), handler, context);
+                        attachEvent.call(events, event.trim(), handler, context);
                     }
 
                     return this;
                 },
-                synchronize = function (url, method, data, cb) {
-                    if (this.transport === 'AJAX') {
-                        ajax(url, method, data, cb);
+                sync: function (url, method, data, cb) {
 
-                    } else if (this.transport === 'SUCK_IO') {
-
-                        this.socket[method](url, data, cb);
-                    }
-
+                    ajax(url, method, data, cb);
                 },
-                msg = function (message) {
-
-
-                    console.log('New comet message received :: ', message);
-
-                };
-
-            return {
-                _init_: function () {
-                    this.length = 0;
-                    this.url = url;
+                emptyModel: function (attr) {
+                    var mdl = Model(this.url, attr || {}, this.transport === 'SOCKET_IO');
+                    mdl.on('created', this.add, this);
+                    return mdl;
+                },
+                firstModel: function () {
+                    return models.list[0];
+                },
+                fire: function (event) {
+                    fire(event);
                     return this;
                 },
-                transport: 'AJAX',
-                fetch: fetch,
-                watch: watch,
-                add: append,
-                remove:destroyed,
-                create: create,
-                forEach: loop,
-                on: onEvent,
-                sync: synchronize,
-                comets: msg
-            }._init_();
+                get: function (id) {
+                    return models.get(id);
+                },
+                asArray: function () {
+                    return models.list;
+                }
+            };
+
+            return new _List();
         },
         View = function (options) {
-            var has = function (key) {
-                    var viewAttrs = ['events', 'host', 'el', 'model', 'collection', 'template', 'initialize'];
-                    var hs = $.inArray(key, viewAttrs);
-                    return hs != -1;
-                },
-                _bind = function () {
+
+            var _bind = function () {
                     var self = this;
                     for (var k in self.events) {
                         var handler = self.events[k];
                         var triggers = k.split(',');
-                        triggers.forEach(function (trigger) {
-                            var event_targets = trigger && trigger.split(':');
+                        $.each(triggers, function () {
+                            var trigger = this,
+                                event_targets = trigger && trigger.split(':');
                             var evt = event_targets[0];
                             var dom = event_targets[1];
-                            evt = evt && evt.trim();
-                            dom = dom && dom.trim();
-                            self.$el.on(evt, dom, $.proxy(self, handler));
-
+                            evt = evt && $.trim(evt);
+                            dom = dom && $.trim(dom);
+                            self.$el.find(dom).unbind();
+                            self[handler] && self.$el.on(evt, dom, $.proxy(self, handler));
                         });
 
                     }
                 },
-                _tmpl = function (cb, mdl, tmpl_name) {
+                removeTip = function (input) {
+                    var attached_tip = input.data('tip');
+                    (attached_tip && attached_tip.remove());
+                },
+                _View = function () {
+                    delete  options['tmpl'];
+                    $.extend(this.events, (options.events || {}));
+                    delete options.events;
+                    $.extend(this, options);
+                    !this.lazy && this.render();
+                    this.onDestroy();
+                };
+
+            _View.prototype = {
+                host: '#content',
+                el: 'span',
+                model: Model(),
+                collection: null,
+                template: '',
+                lazy: false,
+                empty_before_render: true,
+                initialize: function () {
+                },
+                render: function () {
                     var self = this;
-                    var template = tmpl_name || this.template,
-                        load = (mdl && mdl.toObject()) || (this.model && this.model.toObject()) || null;
-                    if (!load) {
-                        console.log('View model is null, perhaps you wants to override View.render to walk render a collection.');
+                    this.$el = this.el ? $('<' + this.el + '/>') : $('<' + this.host + '/>');
+                    this.$host = $(this.host);
+
+                    self.tmpl(function (str) {
+                        if (str) {
+                            if (self.empty_before_render) {
+                                self.$host.off().children().remove();
+                            }
+                            self.$el.off().html(str).appendTo(self.$host);
+                        }
+                        (self.class && self.$el.attr('class', self['class']));
+                        (self.id && self.$el.attr('id', self.id));
+                        self.afterRender();
+
+                    });
+                },
+                beforeEvents: function () {
+                },
+                afterRender: function () {
+                    var self = this;
+                    this.beforeEvents();
+                    _bind.call(self);
+                    if (self.notifyChange && self.collection) {
+                        self.collection.notify(self);
+                    }
+                    self.initialize();
+                    self.myAfterRender && self.myAfterRender();
+                },
+                cleanUps: [],
+                onDestroy: function (f) {
+                    var self = this;
+                    self.$el.bind('destroyed', function () {
+
+                        //console.log('destroyed called...');
+                        if (self.collection) {
+                            self.collection.cleanUp && self.collection.cleanUp();
+                        } else {
+                            self.model.cleanUp && self.model.cleanUp();
+                        }
+                        for (var i = 0; i < self.cleanUps.length; ++i) {
+                            self.cleanUps[i]();
+                        }
+                    });
+                },
+                events: {},
+                update: function (mdl) {
+                    this.tmpl(function (str) {
+                        str && this.$el.off().html(str);
+                        (this.class && this.$el.attr('class', this.class));
+                        (this.id && this.$el.attr('id', this.id));
+                        this.afterRender();
+                    }, mdl);
+                },
+                notifyChange: function (_koll) {
+
+                },
+                remove: function (cb) {
+                    var self = this;
+                    this.$el.off().fadeOut('fast', function () {
+
+                        $(this).remove();
+                        cb && $.isFunction(cb) && cb();
+                    });
+                },
+                hide: function (how) {
+                    this.$el[how ? how : 'fadeOut']('slow');
+                },
+                show: function (how) {
+                    this.$el[how ? how : 'fadeIn']('slow');
+                },
+                reset: function () {
+                    this.$el.clear(removeTip);
+                },
+                data: function (sel) {
+                    return $.mapob(sel ? this.$el.find(sel) : this.$el);
+                },
+                tmpl: function (cb, mdl, tmpl_name) {
+                    var self = this;
+                    var template = tmpl_name || this.template;
+                    if (!template) {
+                        cb && cb('');
                         return;
                     }
+                    template += '.htm';
+                    var load = (mdl && mdl.toObject()) || (this.model && this.model.toObject()) || {};
+                    load = this.isEditor ? load : $.formatFields(load);
+
                     dust.render(template, load, function (error, str) {
                         if (error) {
                             console.log(error);
@@ -685,113 +891,153 @@ module.exports = (function ($) {
                         cb && cb.call(self, str);
                     });
                 },
-                init = function () {
-
-                    var actions = {};
-                    $.each(options, function (k, v) {
-
-                        if (!has(k)) {
-                            var val = options[k];
-                            actions[k] = val;
-                            delete  options[k];
-                        }
-                    })
-
-                    delete  options['tmpl'];
-                    delete  actions['tmpl'];
-                    delete  options['render'];
-                    delete  actions['render'];
-
-                    /*examples events
-                     events = {
-
-
-                     'click:#button1, keyup:.search':'button1',
-                     'click:#button2':'button2',
-                     'click:#button3':'button3',
-                     'focus:.search':'button4',
-                     'blur:.search':'button5'
-
-
-                     }*/
-                    this.events = {};
-                    this.host = options.host || '#content';
-                    this.class = options.class || false;
-                    this.id = options.id || false;
-                    this.el = options.el || '';
-                    this.model = options.model || Model();
-                    this.collection = options.collection || null;
-                    this.template = options.template || '';
-                    this.initialize = (options.initialize && $.isFunction(options.initialize)) ? options.initialize : function () {
-                        console.log("View initialized!");
-                    };
-                    this.render = function (mdl) {
-                        this.tmpl(function (str) {
-
-                            if (mdl) {
-                                this.$el.off().html(str);
-                            } else {
-                                this.$el.off().html(str).appendTo(this.$host);
-                            }
-                            _bind.call(this);
-                        }, mdl);
-                    };
-                    $.extend(this.events, (options.events || {}));
-
-                    if (!this.el) {
-                        console.log('Note that el is undefined. It must be defined.');
-                        return null;
-                    }
-                    this.$el = $('<' + this.el + '/>');
-                    (this.class && this.$el.addClass(this.class));
-                    (this.id && this.$el.attr('id', this.id));
-                    this.$host = $(this.host);
-
-                    $.extend(this, actions);
-                    this.initialize();
-                    return this;
+                dispatch: function (path) {
+                    Path.dispatch(path);
+                    location.hash = path;
                 },
-                remove = function () {
-                    this.$el.off().fadeOut('slow', function () {
-                        $(this).remove();
-                    });
-                },
-                hide = function (how) {//fadeOut,hide,slideUp
-                    this.$el[how ? how : 'fadeOut']('slow');
-                },
-                show = function (how) {//fadeIn,show,slideDown
-                    this.$el[how ? how : 'fadeIn']('slow');
-                };
-
-            return {
-                _init_: init,
-                remove: remove,
-                hide: hide,
-                show: show,
-                tmpl: _tmpl
-            }._init_();
-
-
-        },
-        Router = function (routes) {
-            $.each(routes, function (k, v) {
-                if (k == 'root') {
-                    Path.root(v);
-                } else {
-                    Path.map(k).to(v);
+                goBack: function (cb) {
+                    window.history.back();
+                    cb && cb();
                 }
-            });
-            return{
-                start: Path.listen,
-                help: Path.rescue
+
             };
+            return new _View();
+        },
+        Router = function (/*routes*/) {
+            Path.redirect = function (path) {
+                this.dispatch(path);
+                location.hash = path;
+            };
+            Path.goBack = function () {
+                window.history.back();
+            };
+            return Path;
         };
 
+    if (typeof window.Session === 'undefined' || !window.Session) {
 
-    return {
+        window.Keys = {
+            Enter: 13,
+            Shift: 16,
+            Tab: 9,
+            Escape: 27,
+            LeftArrow: 37
+        };
+        for (var i in Keys) {
+            Keys['is' + i] = (function (compare) {
+                return function (e) {
+                    return (e.keyCode || e.which) === compare;
+
+                };
+            })(Keys[i]);
+        }
+
+        window.Session = (function () {
+            if (!$3$$10N['heap']) {
+                $3$$10N['heap'] = {};
+            }
+
+            return {
+                set: function (k, v) {
+                    $3$$10N['heap'][k] = v;
+                },
+                unset: function (k) {
+                    delete  $3$$10N['heap'][k];
+                },
+                get: function (k) {
+                    return $3$$10N['heap'][k];
+                },
+                reset: function () {
+                    $3$$10N['heap'] = {};
+                },
+                user: function (options) {
+                    if (options) {
+                        var me = $3$$10N['_u53r_'];
+                        $.extend(me, options);
+
+                        $3$$10N['_u53r_'] = me;
+                    } else {
+                        return $3$$10N['_u53r_'];
+                    }
+
+                },
+                appName: function (_appName) {
+                    if (_appName) {
+                        $3$$10N['_@ppN@m3_'] = _appName;
+                    } else {
+                        return $3$$10N['_@ppN@m3_'];
+                    }
+                },
+                faker: function (_faker) {
+                    if (_faker) {
+                        $3$$10N['_f@k3r_'] = _faker;
+                    } else {
+                        return $3$$10N['_f@k3r_'];
+                    }
+                },
+                unsetFaker: function () {
+
+                    delete $3$$10N['_f@k3r_'];
+                },
+                isAuthenticated: function () {
+                    return (this.user() && this.user().domain) && (this.user().domain === this.appName());
+                },
+                inRole: function (role) {
+                    return (this.user() && ($.inArray(role, this.user().roles) > -1));
+                },
+                login: function (user, _appName) {
+                    this.appName(_appName);
+                    user.domain = _appName;
+                    $3$$10N['_u53r_'] = user;
+                    this.unsetFaker();
+                    this.begin();
+                },
+                begin: function () {
+                    var wait = 10,
+                        self = this,
+                        timer, get_out = function () {
+                            clearTimeout(timer);
+                            Path.dispatch('#/logout');
+                        },
+                        resetTimer = function (e) {
+                            clearTimeout(timer);
+                            timer = setTimeout(get_out, 60000 * wait);
+                        };
+                    window.document.onkeypress = resetTimer;
+                    window.document.onmousemove = resetTimer;
+                },
+                logout: function (cb) {
+                    var appName = $3$$10N['_@ppN@m3_'];
+
+                    $3$$10N.$.clearMem();
+                    $3$$10N['_@ppN@m3_'] = appName;
+                    this.reset();
+                    if (cb) {
+                        cb()
+                    } else {
+                        Path.dispatch('#/');
+                        location.hash = '#/';
+                    }
+
+                }
+            };
+        })();
+
+        $(window).on('hashchange', function () {
+            $(this).scrollTop(0);
+        });
+    }
+
+
+    var _slick = {
+        $: $,
         Model: Model,
         Collection: Collection,
         View: View,
         Router: Router
     };
+
+
+    return _slick;
+//})(window.jQuery);
 })(require('jquery'));
