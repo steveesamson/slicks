@@ -2,9 +2,7 @@
  *  * Created by steve samson on 1/9/14.
  *  Updated on June 21, 2016.
  */
-if(!window.$3$$10N) require('../libs/session');
 
-if(!window.dust) require('../libs/dust-core');
 
 module.exports = (function ($) {
 
@@ -14,10 +12,6 @@ module.exports = (function ($) {
 //    PUT   :    /:controller/:id    => update(id)
 //    DELETE:    /:controller/:id    => destroy(id)
 
-    if(!window.jQuery){
-        window.jQuery = window.$ = $;
-    }
-
 
     if (!$) {
         throw Error("Include jQuery on your page to use Slicks-mvc");
@@ -25,7 +19,8 @@ module.exports = (function ($) {
 
 
 
-    require('../libs/functions')($);
+    !global.isTest && require('../libs/browser')($);
+
     var Crypt = require('../libs/tiny-tea'),
         transportMode = {AJAX: 'AJAX', SOCKET_IO: 'SOCKET_IO'},
 
@@ -913,6 +908,7 @@ module.exports = (function ($) {
             };
             return Path;
         };
+/*
 
     if (typeof window.Session === 'undefined' || !window.Session) {
 
@@ -1027,7 +1023,7 @@ module.exports = (function ($) {
             $(this).scrollTop(0);
         });
     }
-
+*/
 
     var _slick = {
         $: $,

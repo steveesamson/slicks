@@ -33,6 +33,7 @@ module.exports = function ($) {
     (function () {
         var oldClean = $.cleanData;
 
+
         $.cleanData = function (elems) {
             for (var i = 0, elem;
                  (elem = elems[i]) !== undefined; i++) {
@@ -40,6 +41,7 @@ module.exports = function ($) {
             }
             oldClean(elems);
         };
+        $.functionsLoaded = true;
     })();
 
 
