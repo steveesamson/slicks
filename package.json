@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "An MVC framework for Javascript.",
   "main": "dist/slicks.js",
+  "license": "MIT",
   "scripts": {
     "test": "make test"
   },
