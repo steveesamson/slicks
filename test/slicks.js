@@ -8,6 +8,7 @@ var Slicks = require('../dist/slicks'),
 
 describe('#Model',function(){
     describe('#get',function(){
+
         it('Should be a string',function(){
             model.get('name').should.be.a('string');
         });
@@ -17,6 +18,12 @@ describe('#Model',function(){
 
     });
     describe('#set',function(){
+        //it('Should fire on model change', function(){
+        //    model.on('change', function(mdl){
+        //        mdl.get('name').should.equal('sam');
+        //    }, null);
+        //});
+
         it('Should return sam',function(){
             model.set('name','sam');
             model.get('name').should.equal('sam');
