@@ -5,7 +5,7 @@
   "main": "dist/slicks.js",
   "license": "MIT",
   "scripts": {
-    "test": "make test"
+    "test": "./node_modules/mocha/bin/mocha --ui tdd --recursive ./test/slicks.js"
   },
   "keywords": [
     "mvc",
@@ -21,21 +21,16 @@
     "url": "git://github.com/steveesamson/slicks.git"
   },
   "author": "Steve Samson <stevee.samson@gmail.com>",
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "https://github.com/steveesamson/slicks/blob/master/MIT-License.txt"
-    }
-  ],
   "bugs": {
     "url": "https://github.com/steveesamson/slicks/issues"
   },
   "dependencies": {
-    "hashids": "1.0.1",
-    "jquery": "^2.1.4"
+    "hashids": "^1.0.1",
+    "seleto": "^1.1.0"
   },
   "devDependencies": {
-    "mocha": "~1.17.1",
-    "chai": "~1.9.0"
+    "atomus": "^2.0.0",
+    "chai": "^3.5.0",
+    "mocha": "^2.5.3"
   }
 }
