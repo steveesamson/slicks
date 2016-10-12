@@ -1,5 +1,5 @@
 #Slicks
-Slicks is a simple javascript Client MVC framework. It uses **`seleto.js`, `Dust.js`** for rendering pre-compiled templates.
+Slicks is a simple javascript Client MVC framework. It uses **`seleto.js`, `stud.js`** for rendering pre-compiled templates.
 
 #### Installation
 ```cli
