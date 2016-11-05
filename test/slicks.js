@@ -29,7 +29,7 @@ var Collection = null,
         return View({
             lazy: true,
             empty_before_render: false, //allows append to the host element.
-            template: "{name} - {age} <a href='#' class='detail'>detail</a> | <a href='#' class='delete'>delete</a>",
+            template: "@{name} - {age} <a href='#' class='detail'>detail</a> | <a href='#' class='delete'>delete</a>",
             el: 'li',
             host: '.lists',
             events:{
@@ -68,6 +68,7 @@ describe('#Slicks Model', function () {
     before(function (done) {
         browser = atomus()
             .external(__dirname + '/../libs/browser/session.js')
+            .external(__dirname + '/../test/stud.js')
             .external(__dirname + '/../test/seleto.js')
             .external(__dirname + '/../libs/browser/extension.js')
             .html(htmlStr)
@@ -421,7 +422,7 @@ describe('#Slicks View', function () {
 
     });
 
-    describe('#Slicks View Render a the view', function () {
+    describe('#Slicks View Render', function () {
 
 
         it("Expects listItemView.$host.find('li').size() to be equal to 1", function () {
