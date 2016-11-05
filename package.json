@@ -30,6 +30,7 @@
     "mocha": "^2.5.3"
   },
   "dependencies": {
+    "shortid": "^2.2.6",
     "slicks-utils": "^1.0.1"
   }
 }

@@ -660,8 +660,7 @@
             if (!window || !window.$) {
                 throw Error("Include Seleto or jQuery on your page to use Slicks-mvc");
             }
-            //require('../libs/SlicksExtensions');
-            Ext(window.$);
+            !window.$.extLoaded && Ext(window.$);
             var $ = window.$,
                 _tmpl = function (cb, mdl, tmpl_name) {
                     var self = this,
