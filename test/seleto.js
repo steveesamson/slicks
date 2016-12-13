@@ -1,6 +1,6 @@
 // custom selector implementation
 // nickname: seleto
-;(function (undefined) {
+;(function (root) {
     'use strict';
 
     if (!Array.prototype.indexOf) {
@@ -1219,7 +1219,7 @@
         }
         return this;
     };
-    window.seleto = seleto;
-    window.$ = seleto;
+    root.seleto = seleto;
+    root.$ = seleto;
 
-}());
+}(this));

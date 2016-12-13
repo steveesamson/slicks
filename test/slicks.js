@@ -67,10 +67,10 @@ describe('#Slicks Model', function () {
 
     before(function (done) {
         browser = atomus()
-            .external(__dirname + '/../libs/browser/session.js')
-            .external(__dirname + '/../test/stud.js')
             .external(__dirname + '/../test/seleto.js')
-            .external(__dirname + '/../libs/browser/extension.js')
+            .external(__dirname + '/../dist/slicks.js')
+            //.external(__dirname + '/../test/stud.js')
+            //.external(__dirname + '/../libs/browser/extension.js')
             .html(htmlStr)
             .ready(function (errors, window) {
                 $ = window.$;
@@ -78,7 +78,7 @@ describe('#Slicks Model', function () {
                 global.slicks_tests = true;
                 seleto = window.seleto;
                 setUpOk = (errors === null);
-                var Slicks = require('../dist/slicks');
+                var Slicks = window.Slicks;//require('../dist/slicks');
                 View = Slicks.View;
                 Collection = Slicks.Collection;
                 Model = Slicks.Model;
@@ -130,7 +130,7 @@ describe('#Slicks Model', function () {
     describe('#unset', function () {
         it('Expect  get(name) to be undefined', function () {
             userModel.unset('name');
-            expect(userModel.get('name')).to.be.undefined;//.should.('tom');
+            expect(userModel.get('name')).to.be.undefined;
         })
     });
 
@@ -173,7 +173,7 @@ describe('#Slicks Model', function () {
         })
     });
     describe('#POST, #GET, #DELETE, #PUT', function () {
-        it('Expects MSG.method to be - post', function () {
+        it('Expects msg.method to be - post', function () {
             userModel.extend({
                 sync: function (url, mtd, param, cb) {
                     cb({url: url, method: mtd});
@@ -184,7 +184,7 @@ describe('#Slicks Model', function () {
                 msg.method.should.equal('post');
             })
         });
-        it('Expects MSG.method to be - get', function () {
+        it('Expects msg.method to be - get', function () {
 
             userModel.get('/states/ohio', {country: 'US'}, function (e, msg) {
 
@@ -192,14 +192,14 @@ describe('#Slicks Model', function () {
             })
         });
 
-        it('Expects MSG.method to be - post', function () {
+        it('Expects msg.method to be - post', function () {
 
             userModel.save(function (e, msg) {
                 msg.method.should.equal('post');
             });
         });
 
-        it('Expects MSG.method to be - put', function () {
+        it('Expects msg.method to be - put', function () {
 
             userModel.set("id", 10);
 
@@ -209,7 +209,7 @@ describe('#Slicks Model', function () {
         });
 
 
-        it('Expects MSG.method to be - delete', function () {
+        it('Expects msg.method to be - delete', function () {
 
             userModel.destroy(function (e, msg) {
                 msg.method.should.equal('delete');
