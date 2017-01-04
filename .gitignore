@@ -3,4 +3,5 @@ node_modules
 ignore
 backup
 npm-debug.log
+.vscode
 

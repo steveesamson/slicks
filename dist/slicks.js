@@ -18,30 +18,7 @@
     if (!root.$) {
         throw Error("Include Seleto or jQuery on your page to use Slicks-mvc");
     }
-
-    root.Slicks = {
-        sync: function (url, method, data, cb) {
-
-            $.ajax({
-                type: method,
-                beforeSend: function (xhr) {
-                    $('.data-connecting').show();
-                    Session.isAuthenticated() && xhr.setRequestHeader('x-csrf-token', Session.user().token || '');
-                },
-                url: url,
-                data: data,
-                success: function (res) {
-                    $('.data-connecting').hide();
-                    cb(res);
-                },
-                error: function () {
-                    $('.data-connecting').hide();
-                },
-                dataType: 'json'
-            });
-        }
-    };
-    if (typeof Array.prototype.indexOf == 'undefined') {
+        if (typeof Array.prototype.indexOf == 'undefined') {
         Array.prototype.indexOf = function (obj, start) {
             for (var i = (start || 0), j = this.length; i < j; i++) {
                 if (this[i] === obj) {
@@ -67,6 +44,31 @@
             return Object.prototype.toString.call(arg) === '[object Array]';
         };
     }
+
+
+    root.Slicks = {
+        sync: function (url, method, data, cb) {
+
+            $.ajax({
+                type: method,
+                beforeSend: function (xhr) {
+                    $('.data-connecting').show();
+                    Session.isAuthenticated() && xhr.setRequestHeader('x-csrf-token', Session.user().token || '');
+                },
+                url: url,
+                data: data,
+                success: function (res) {
+                    $('.data-connecting').hide();
+                    cb(res);
+                },
+                error: function () {
+                    $('.data-connecting').hide();
+                },
+                dataType: 'json'
+            });
+        }
+    };
+
 
     var Crypt = (function () {
 
