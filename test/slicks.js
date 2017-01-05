@@ -67,10 +67,7 @@ describe('#Slicks Model', function () {
 
     before(function (done) {
         browser = atomus()
-            .external(__dirname + '/../test/seleto.js')
             .external(__dirname + '/../dist/slicks.js')
-            //.external(__dirname + '/../test/stud.js')
-            //.external(__dirname + '/../libs/browser/extension.js')
             .html(htmlStr)
             .ready(function (errors, window) {
                 $ = window.$;
@@ -78,7 +75,9 @@ describe('#Slicks Model', function () {
                 global.slicks_tests = true;
                 seleto = window.seleto;
                 setUpOk = (errors === null);
-                var Slicks = window.Slicks;//require('../dist/slicks');
+                var Slicks = window.Slicks;
+                
+                
                 View = Slicks.View;
                 Collection = Slicks.Collection;
                 Model = Slicks.Model;
@@ -385,12 +384,12 @@ describe('#Slicks View', function () {
             expect($).to.be.defined;
         });
 
-        it("Expects seleto to be defined ", function () {
-            expect(seleto).to.be.defined;
-        });
-        it("Expects seleto to be equal $ ", function () {
-            expect(seleto).to.be.equal($);
-        });
+        // it("Expects seleto to be defined ", function () {
+        //     expect(seleto).to.be.defined;
+        // });
+        // it("Expects seleto to be equal $ ", function () {
+        //     expect(seleto).to.be.equal($);
+        // });
 
         it("Expects output to be defined ", function () {
             output = $('#output');
@@ -460,26 +459,26 @@ describe('#Slicks View', function () {
 
         it("Expects output.text() to be 'Tom details'", function(){
 
-            listItemView.$host.find('li').nth(1).find('a.detail').click();
+            listItemView.$host.find('li').eq(0).find('a.detail').click();
             expect(output.text()).to.be.equal('Tom details');
 
         });
         it("Expects output.text() to be 'Joe details'", function(){
 
-            listItemView.$host.find('li').nth(2).find('a.detail').click();
+            listItemView.$host.find('li').eq(1).find('a.detail').click();
             expect(output.text()).to.be.equal('Joe details');
 
         });
         it("Expects output.text() to be 'Sam details'", function(){
 
-            listItemView.$host.find('li').nth(3).find('a.detail').click();
+            listItemView.$host.find('li').eq(2).find('a.detail').click();
             expect(output.text()).to.be.equal('Sam details');
 
         });
 
         it("Expects output.text() to be 'Pope details'", function(){
 
-            listItemView.$host.find('li').nth(4).find('a.detail').click();
+            listItemView.$host.find('li').eq(3).find('a.detail').click();
             expect(output.text()).to.be.equal('Pope details');
 
         });
@@ -495,7 +494,7 @@ describe('#Slicks View', function () {
 
         it("Expects output.text() to be 'Pope deleted'", function(){
 
-            listItemView.$host.find('li').nth(4).find('a.delete').click();
+            listItemView.$host.find('li').eq(3).find('a.delete').click();
             expect(output.text()).to.be.equal('Pope deleted');
 
         });
@@ -509,7 +508,7 @@ describe('#Slicks View', function () {
 
         it("Expects output.text() to be 'Sam deleted'", function(){
 
-            listItemView.$host.find('li').nth(3).find('a.delete').click();
+            listItemView.$host.find('li').eq(2).find('a.delete').click();
             expect(output.text()).to.be.equal('Sam deleted');
 
         });
@@ -522,7 +521,7 @@ describe('#Slicks View', function () {
 
         it("Expects output.text() to be 'Joe deleted'", function(){
 
-            listItemView.$host.find('li').nth(2).find('a.delete').click();
+            listItemView.$host.find('li').eq(1).find('a.delete').click();
             expect(output.text()).to.be.equal('Joe deleted');
 
         });
@@ -533,7 +532,7 @@ describe('#Slicks View', function () {
         });
         it("Expects output.text() to be 'Tom deleted'", function(){
 
-            listItemView.$host.find('li').nth(1).find('a.delete').click();
+            listItemView.$host.find('li').eq(0).find('a.delete').click();
             expect(output.text()).to.be.equal('Tom deleted');
 
         });

@@ -1,24 +1,36 @@
-/**
- * Created by steve on 7/21/16.
- */
-/**
- * Created by steve Samson <stevee.samson@gmail.com> on 2/10/14.
- */
+(function(factory) {
 
-;(function (base, factory) {
+  // Establish the root object, `window` (`self`) in the browser, or `global` on the server.
+  // We use `self` instead of `window` for `WebWorker` support.
+  var root = (typeof self == 'object' && self.self === self && self) ||
+            (typeof global == 'object' && global.global === global && global);
 
-    if (typeof module === 'object' && module.exports) {
-        module.exports = factory(base);
-    } else {
-        factory(base);
+  // Set up Slicks appropriately for the environment. Start with AMD.
+  if (typeof define === 'function' && define.amd) {
+    define(['jquery', 'exports'], function($, exports) {
+      // Export global even in AMD case in case this script is loaded with
+      // others that may still expect a global Backbone.
+      root.Slicks = factory(root, exports, $);
+    });
+
+  // Next for Node.js or CommonJS. jQuery may not be needed as a module.
+  } else if (typeof exports !== 'undefined') {
+    var $;
+    try { $ = require('jquery'); } catch (e) {}
+    factory(root, exports, $);
+
+  // Finally, as a browser global.
+  } else {
+    root.Slicks = factory(root, {}, (root.jQuery || root.Zepto || root.ender || root.$));
+  }
+
+})(function(root, exports, $){
+
+    if (!$) {
+        throw Error("Include jQuery, Seleto, Zepto or ender on your page to use Slicks-mvc");
     }
-}(this,function (root) {
 
-
-    if (!root.$) {
-        throw Error("Include Seleto or jQuery on your page to use Slicks-mvc");
-    }
-        if (typeof Array.prototype.indexOf == 'undefined') {
+    if (typeof Array.prototype.indexOf == 'undefined') {
         Array.prototype.indexOf = function (obj, start) {
             for (var i = (start || 0), j = this.length; i < j; i++) {
                 if (this[i] === obj) {
@@ -28,7 +40,7 @@
             return -1;
         }
     }
-    if (typeof  String.prototype.endsWith == 'undefined') {
+    if (typeof String.prototype.endsWith == 'undefined') {
         String.prototype.endsWith = function (suffix) {
             return this.indexOf(suffix, this.length - suffix.length) !== -1;
         };
@@ -45,61 +57,11 @@
         };
     }
 
+    const RE = /([^{]*)?(\{(\w+)\})?([^{]*)?/ig;
 
-    root.Slicks = {
-        sync: function (url, method, data, cb) {
-
-            $.ajax({
-                type: method,
-                beforeSend: function (xhr) {
-                    $('.data-connecting').show();
-                    Session.isAuthenticated() && xhr.setRequestHeader('x-csrf-token', Session.user().token || '');
-                },
-                url: url,
-                data: data,
-                success: function (res) {
-                    $('.data-connecting').hide();
-                    cb(res);
-                },
-                error: function () {
-                    $('.data-connecting').hide();
-                },
-                dataType: 'json'
-            });
-        }
-    };
-
-
-    var Crypt = (function () {
-
-            var encode = function (s) {
-                var enc = "";
-                var str = "";
-                // make sure that input is string
-                str = s + "";
-
-                for (var i = 0; i < s.length; i++) {
-                    // create block
-                    var a = s.charCodeAt(i);
-                    // bitwise XOR
-                    var b = a ^ '120';
-                    enc = enc + String.fromCharCode(b);
-                }
-                return enc;
-            };
-
-            return {
-                encrypt: function (clear) {
-
-                    return btoa(encode(clear));
-                },
-                decrypt: function (sealed) {
-
-                    return encode(atob(sealed));
-
-                }
-            };
-        }()),
+    var isString = function (o) {
+            return typeof o === 'string';
+        },
         stringbuilder = function (initialString) {
             var content = [];
             (initialString && content.push(initialString));
@@ -116,15 +78,96 @@
                 }
             };
 
+        },
+        renderString = function (templateString, options, cb) {
+            var sb = stringbuilder();
+
+            templateString = templateString.trim().replace(/"/g, "'");
+            templateString = templateString.replace(/[\n\r]/g, ' ');
+            templateString = templateString.replace(/\s+/g, ' ');
+
+            templateString.replace(
+                RE,
+                function ($0, $1, $2, $3, $4) {
+                    if ($1) {
+                        sb.append($1);
+                    }
+                    if ($3) {
+                        sb.append(options[$3]);
+                    }
+
+                    if ($4) {
+                        sb.append($4);
+                    }
+
+                    return;
+                }
+            );
+            cb && cb(false, sb.toString());
+        },
+        stud = {
+            cache: {},
+            buffer: function (startString) {
+
+                return stringbuilder(startString);
+            },
+            render: function (name, data, cb) {
+                var str = this.cache[name](data);
+                if (cb) cb(str);
+                else return str;
+            },
+            isRegistered: function (name) {
+                return !!this.cache[name];
+            },
+            register: function (name, fn) {
+                if (!name || !fn || !(typeof fn === 'function')) {
+                    console.error("Cannot register template...");
+                    return;
+                }
+                this.cache[name] = fn;
+            },
+            template: function (templateString, options, cb) {
+
+                renderString(templateString, options, cb);
+            }
+
+        },
+        Crypt = (function () {
+
+        var encode = function (s) {
+            var enc = "";
+            var str = "";
+            // make sure that input is string
+            str = s + "";
+
+            for (var i = 0; i < s.length; i++) {
+                // create block
+                var a = s.charCodeAt(i);
+                // bitwise XOR
+                var b = a ^ '120';
+                enc = enc + String.fromCharCode(b);
+            }
+            return enc;
         };
 
-    root._ = _ = (function () {
+        return {
+            encrypt: function (clear) {
+
+                return btoa(encode(clear));
+            },
+            decrypt: function (sealed) {
+
+                return encode(atob(sealed));
+
+            }
+        };
+    }()),
+     _ = (function () {
         var happy = function (j) {
                 return (j !== null && j.error === undefined);
             },
             inherits = function (base) {
-                function F() {
-                }
+                function F() {}
 
                 F.prototype = base;
                 var f = new F;
@@ -314,70 +357,174 @@
             format: format
         };
 
-    }());
+    }()),
+     Ext = function () {
 
-    root.stud = (function () {
+        (function () {
+            var oldClean = $.cleanData;
 
-        var isStud = function (o) {
-                return o instanceof stud;
-            },
-            stud = function () {
-                if (!isStud(this)) return new stud();
-                this.cache = {};
+
+            $.cleanData = function (elems) {
+                for (var i = 0, elem;
+                    (elem = elems[i]) !== undefined; i++) {
+                    $(elem).triggerHandler("destroyed");
+                }
+                oldClean(elems);
             };
+        })();
 
-        stud.fn = stud.prototype;
-        stud.fn.buffer = function () {
-            return stringbuilder();
-        };
-        stud.fn.render = function (name, data, cb) {
-            var str = this.cache[name](data);
-            if (cb) cb(str);
-            else return str;
-        };
-        stud.fn.express = function (template, options, cb) { // define the template engine
 
-            (function () {
-
-                var re = /([^{]*)?(\{(\w+)\})([^{]*)?/ig,
-                    sb = stringbuilder();
-
-                template.replace(
-                    re,
-                    function ($0, $1, $2, $3, $4) {
-                        if ($1) {
-                            sb.append($1);
-                        }
-                        if ($3) {
-                            sb.append(options[$3]);
-                        }
-
-                        if ($4) {
-                            sb.append($4);
-                        }
-
-                        return;
-                    }
-                );
-                cb && cb(false, sb.toString());
-            })();
-
-        };
-        stud.fn.isRegistered = function (name) {
-            return !!this.cache[name];
-        };
-        stud.fn.register = function (name, fn) {
-            if (!name || !fn || !(typeof fn === 'function')) {
-                console.error("Cannot register template...");
+        $.notify = function (txt, type) {
+            $('p.error, p.message, p.success').hide('slow');
+            if (!txt) {
                 return;
             }
-            this.cache[name] = fn;
+            var msg = $('p.' + type);
+            if (msg) {
+                msg.find('.' + type.trim() + '-message').text(txt).end().fadeIn('slow');
+                setTimeout(function () {
+                    msg.hide('slow');
+                }, type == 'error' ? 10000 + txt.length : 8000 + txt.length);
+            } else {
+                alert(txt);
+            }
         };
 
-        return stud();
-    }());
+        $.mapob = function ($el) {
+            var map = {};
+            $el.find(':input').not(':button').each(function () {
+                var dis = $(this);
+                var name = dis.attr('name');
+                if (!name) return;
+                if (dis.is(':checkbox') || dis.is(':radio')) {
+                    if (dis.is(':checked')) {
+                        map[name] = dis.val() == 'on' ? 'true' : dis.val();
+                    } else {
+                        map[name] = dis.val() == 'on' ? 'false' : '';
+                    }
+                } else {
+                    var value = dis.val();
+                    if ($.trim(value)) {
+                        if (name !== 'Zebra_DatePicker_Icon' && name !== undefined) {
+                            map[name] = value;
+                        }
+                    }
+                }
+            });
+            return map;
+        };
 
-    root._.template = function (cb, mdl, tmpl_name) {
+        $.fn.loadImage = function (src, cb) {
+            return $(this).each(function () {
+                var image_container = $(this);
+                image_container.empty().fadeIn('slow').addClass('image_loading');
+                var img = new Image();
+                $(img).load(
+                    function () {
+                        $(this).css('display', 'none');
+                        image_container.removeClass('image_loading').empty().append(this);
+                        $(this).fadeIn('slow', function () {
+                            cb && $.isFunction(cb) && cb();
+                        });
+                    }).error(
+                    function () {
+                        image_container.remove();
+                    }).attr('src', src + '?' + (new Date()).getTime());
+            });
+        };
+        $.fn.showMe = function (cb) {
+            cb && cb();
+            return $(this).each(function () {
+                $(this).removeClass('hide');
+
+            });
+        };
+        $.fn.hideMe = function (cb) {
+            cb && cb();
+            return $(this).each(function () {
+                $(this).addClass('hide');
+
+            });
+        };
+        $.fn.xhange = function (context) {
+            return $(this).change(
+                function () {
+                    var sel = $(this).val();
+                    var name = $(this).attr('name');
+                    context.model && context.model.set(name, sel);
+                }
+            )
+        };
+        $.fn.clear = function (removeTip) {
+
+            return $(this).each(function () {
+                $(this).find('[type=file], [type=text], [type=password], [type=hidden], select, textarea')
+                    .each(function () {
+                        var input = $(this);
+                        input.val('');
+                        if (input.is('[data-validation]')) {
+                            removeTip && removeTip(input);
+                            input.change && input.change();
+                        }
+                    });
+            })
+        };
+        $.fn.only_numeric = function () {
+            return $(this).each(function () {
+                $(this).keyup(function () {
+                    if (!_.isNumeric($(this).val())) {
+                        $(this).val('');
+                    }
+                });
+            });
+        };
+        $.fn.only_integer = function () {
+            return $(this).each(function () {
+                $(this).keyup(function () {
+                    if (!_.isInteger($(this).val())) {
+                        $(this).val('');
+                    }
+                });
+            });
+        };
+        $.fn.swapWith = function (tag) {
+            return this.each(function () {
+                var elm = $(this),
+                    new_elm = null;
+                switch (tag.toLowerCase()) {
+                    case 'select':
+                        new_elm = $('<select></select>');
+                        break;
+                    case 'text':
+                        new_elm = $('<input type="text"/>');
+                        break;
+                    case 'password':
+                        new_elm = $('<input type="password"/>');
+                        break;
+                    case 'textarea':
+                        new_elm = $('<textarea></textarea>');
+                        break;
+                }
+                elm.hide(function () {
+                    new_elm.attr('name', elm.attr('name')).attr('class', elm.attr('class')).attr('id', elm.attr('id')).attr('value', elm.attr('value'));
+                    elm = elm.replaceWith(new_elm);
+                })
+            });
+        };
+        $.fn.swapClass = function (c1, c2) {
+            return this.each(function () {
+                if ($(this).is('.' + c1)) {
+                    $(this).removeClass(c1).addClass(c2);
+                } else {
+                    $(this).removeClass(c2).addClass(c1);
+                }
+            });
+        };
+
+        $.extLoaded = true;
+    };
+
+     _.template = function (cb, mdl, tmpl_name) {
         var self = this,
             load = ((mdl && mdl.toObject()) || (this.model && this.model.toObject()) || {}),
             template;
@@ -385,7 +532,7 @@
         if (this.template && this.template.startsWith('@')) {
 
             template = this.template.substring(1);
-            root.stud.express(template, load, function (error, str) {
+            stud.template(template, load, function (error, str) {
                 if (error) {
                     console.log(error);
                     return;
@@ -401,7 +548,7 @@
                 return;
             }
             template += '.html';
-            root.stud.render(template, load, function (error, str) {
+            stud.render(template, load, function (error, str) {
                 if (error) {
                     console.log(error);
                     return;
@@ -411,173 +558,30 @@
         }
     };
 
+    exports.sync = function (url, method, data, cb) {
 
-    var Ext = function ($) {
+        $.ajax({
+            type: method,
+            beforeSend: function (xhr) {
+                $('.data-connecting').show();
+                Session.isAuthenticated() && xhr.setRequestHeader('x-csrf-token', Session.user().token || '');
+            },
+            url: url,
+            data: data,
+            success: function (res) {
+                $('.data-connecting').hide();
+                cb(res);
+            },
+            error: function () {
+                $('.data-connecting').hide();
+            },
+            dataType: 'json'
+        });
+    };
 
-            (function () {
-                var oldClean = $.cleanData;
 
 
-                $.cleanData = function (elems) {
-                    for (var i = 0, elem;
-                         (elem = elems[i]) !== undefined; i++) {
-                        $(elem).triggerHandler("destroyed");
-                    }
-                    oldClean(elems);
-                };
-            })();
-
-
-            $.notify = function (txt, type) {
-                $('p.error, p.message, p.success').hide('slow');
-                if (!txt) {
-                    return;
-                }
-                var msg = $('p.' + type);
-                if (msg) {
-                    msg.find('.' + type.trim() + '-message').text(txt).end().fadeIn('slow');
-                    setTimeout(function () {
-                        msg.hide('slow');
-                    }, type == 'error' ? 10000 + txt.length : 8000 + txt.length);
-                } else {
-                    alert(txt);
-                }
-            };
-
-            $.mapob = function ($el) {
-                var map = {};
-                $el.find(':input').not(':button').each(function () {
-                    var dis = $(this);
-                    var name = dis.attr('name');
-                    if (!name) return;
-                    if (dis.is(':checkbox') || dis.is(':radio')) {
-                        if (dis.is(':checked')) {
-                            map[name] = dis.val() == 'on' ? 'true' : dis.val();
-                        } else {
-                            map[name] = dis.val() == 'on' ? 'false' : '';
-                        }
-                    } else {
-                        var value = dis.val();
-                        if ($.trim(value)) {
-                            if (name !== 'Zebra_DatePicker_Icon' && name !== undefined) {
-                                map[name] = value;
-                            }
-                        }
-                    }
-                });
-                return map;
-            };
-
-            $.fn.loadImage = function (src, cb) {
-                return $(this).each(function () {
-                    var image_container = $(this);
-                    image_container.empty().fadeIn('slow').addClass('image_loading');
-                    var img = new Image();
-                    $(img).load(
-                        function () {
-                            $(this).css('display', 'none');
-                            image_container.removeClass('image_loading').empty().append(this);
-                            $(this).fadeIn('slow', function () {
-                                cb && $.isFunction(cb) && cb();
-                            });
-                        }).error(
-                        function () {
-                            image_container.remove();
-                        }).attr('src', src + '?' + (new Date()).getTime());
-                });
-            };
-            $.fn.showMe = function (cb) {
-                cb && cb();
-                return $(this).each(function () {
-                    $(this).removeClass('hide');
-
-                });
-            };
-            $.fn.hideMe = function (cb) {
-                cb && cb();
-                return $(this).each(function () {
-                    $(this).addClass('hide');
-
-                });
-            };
-            $.fn.xhange = function (context) {
-                return $(this).change(
-                    function () {
-                        var sel = $(this).val();
-                        var name = $(this).attr('name');
-                        context.model && context.model.set(name, sel);
-                    }
-                )
-            };
-            $.fn.clear = function (removeTip) {
-
-                return $(this).each(function () {
-                    $(this).find('[type=file], [type=text], [type=password], [type=hidden], select, textarea')
-                        .each(function () {
-                            var input = $(this);
-                            input.val('');
-                            if (input.is('[data-validation]')) {
-                                removeTip && removeTip(input);
-                                input.change && input.change();
-                            }
-                        });
-                })
-            };
-            $.fn.only_numeric = function () {
-                return $(this).each(function () {
-                    $(this).keyup(function () {
-                        if (!_.isNumeric($(this).val())) {
-                            $(this).val('');
-                        }
-                    });
-                });
-            };
-            $.fn.only_integer = function () {
-                return $(this).each(function () {
-                    $(this).keyup(function () {
-                        if (!_.isInteger($(this).val())) {
-                            $(this).val('');
-                        }
-                    });
-                });
-            };
-            $.fn.swapWith = function (tag) {
-                return this.each(function () {
-                    var elm = $(this),
-                        new_elm = null;
-                    switch (tag.toLowerCase()) {
-                        case 'select':
-                            new_elm = $('<select></select>');
-                            break;
-                        case 'text':
-                            new_elm = $('<input type="text"/>');
-                            break;
-                        case 'password':
-                            new_elm = $('<input type="password"/>');
-                            break;
-                        case 'textarea':
-                            new_elm = $('<textarea></textarea>');
-                            break;
-                    }
-                    elm.hide(function () {
-                        new_elm.attr('name', elm.attr('name')).attr('class', elm.attr('class')).attr('id', elm.attr('id')).attr('value', elm.attr('value'));
-                        elm = elm.replaceWith(new_elm);
-                    })
-                });
-            };
-            $.fn.swapClass = function (c1, c2) {
-                return this.each(function () {
-                    if ($(this).is('.' + c1)) {
-                        $(this).removeClass(c1).addClass(c2);
-                    } else {
-                        $(this).removeClass(c2).addClass(c1);
-                    }
-                });
-            };
-
-            $.extLoaded = true;
-        },
-        Model = function (_url, _attributes, _socket) {
+    var Model = function (_url, _attributes, _socket) {
 
             var resolveCall = function (url, params, cb) {
 
@@ -614,14 +618,20 @@
 
                     var attr = params || this.toObject(),
                         mdl = Model((url || this.url), attr, this.useRealTime);
-                    mdl.extend({sync: this.sync});
+                    mdl.extend({
+                        sync: this.sync
+                    });
                     mdl.query = attr;
-                    return {model: mdl, callback: cb};
+                    return {
+                        model: mdl,
+                        callback: cb
+                    };
                 },
                 prepSyncing = function (method, model, cb) {
 
 
-                    var url = null, data = {};
+                    var url = null,
+                        data = {};
                     switch (method) {
                         case 'post':
                             url = model.url;
@@ -761,7 +771,10 @@
 
                             prepSyncing.call(this, method, this, function (e, mdl) {
 
-                                _.xtend(mdl, {method: method, url: self.url});
+                                _.xtend(mdl, {
+                                    method: method,
+                                    url: self.url
+                                });
                                 if (!e) {
 
                                     if (method === 'put') {
@@ -776,7 +789,9 @@
                                         dirty_attributes = {};
 
                                         if (cb && _.isFunction(cb)) {
-                                            _.xtend(mdl, {message: _.makeName(self.model_name) + ' was successfully updated.'});
+                                            _.xtend(mdl, {
+                                                message: _.makeName(self.model_name) + ' was successfully updated.'
+                                            });
                                             cb(e, mdl);
                                         } else {
                                             $.notify(_.makeName(self.model_name) + ' was successfully updated.', 'success');
@@ -789,7 +804,9 @@
                                         fire('created', self);
                                         if (cb && _.isFunction(cb)) {
 
-                                            _.xtend(mdl, {message: _.makeName(self.model_name) + ' was successfully created.'});
+                                            _.xtend(mdl, {
+                                                message: _.makeName(self.model_name) + ' was successfully created.'
+                                            });
                                             cb(e, mdl);
                                             //global.isTest? cb(e,mdl):  cb(_.makeName(self.model_name) + ' was successfully created.', 'success');
 
@@ -807,11 +824,16 @@
                         },
                         destroy: function (cb) {
                             var self = this,
-                                md = {method: 'delete', url: self.url};
+                                md = {
+                                    method: 'delete',
+                                    url: self.url
+                                };
                             if (!this.getInt('id')) {
                                 this.fire('destroy');
 
-                                _.xtend(md, {message: _.makeName(self.model_name) + ' was successfully deleted.'});
+                                _.xtend(md, {
+                                    message: _.makeName(self.model_name) + ' was successfully deleted.'
+                                });
                                 cb && cb(false, md);
                                 return;
                             }
@@ -823,7 +845,9 @@
                                         //cb && _.isFunction(cb) && cb();
                                         if (cb && _.isFunction(cb)) {
                                             _.xtend(mdl, md);
-                                            _.xtend(mdl, {message: _.makeName(self.model_name) + ' was successfully deleted.'});
+                                            _.xtend(mdl, {
+                                                message: _.makeName(self.model_name) + ' was successfully deleted.'
+                                            });
                                             cb(e, mdl);
                                         } else {
                                             $.notify(_.makeName(self.model_name) + ' was successfully deleted.', 'success');
@@ -967,7 +991,7 @@
                         this.map = {};
                         _koll.length = this.list.length;
                         fire('change');
-                        collectionChanged.call(_koll, 'change');//added
+                        collectionChanged.call(_koll, 'change'); //added
                     }
                 },
                 model_changed = function (mdl) {
@@ -1000,12 +1024,16 @@
                             var self = this,
                                 mdl = Model(this.url, {}, this.useRealTime),
                                 load = {};
-                            mdl.extend({sync: this.sync});
+                            mdl.extend({
+                                sync: this.sync
+                            });
                             if (q) {
                                 load['query'] = q || {};
                             }
 
-                            _.xtend(load, {url: this.url});
+                            _.xtend(load, {
+                                url: this.url
+                            });
 
                             mdl.fetch(this.url, load, function (e, mdls) {
                                 if (!e) {
@@ -1034,7 +1062,9 @@
 
                             if (!mdl.toObject) {
                                 mdl = Model(this.url, mdl, this.useRealTime);
-                                mdl.extend({sync: this.sync});
+                                mdl.extend({
+                                    sync: this.sync
+                                });
                             }
                             mdl.on('created', this.add, this);
                             mdl.save(cb);
@@ -1102,10 +1132,8 @@
         },
         View = function (options) {
 
-            !root.$.extLoaded && Ext(root.$);
-            var $ = root.$,
-
-                _bind = function () {
+            !$.extLoaded && Ext();
+            var _bind = function () {
 
                     var self = this,
                         proxy = function (context, handler) {
@@ -1149,17 +1177,18 @@
                             }
                             return this;
                         },
-                        initialize: function () {
-                        },
+                        initialize: function () {},
                         render: function () {
                             var self = this;
                             _.template.call(self, function (str) {
+
                                 if (str) {
                                     if (self.empty_before_render) {
                                         self.$host.off().children().trigger('destroyed').remove();
                                     }
                                     self.$el.off().html(str).appendTo(self.$host);
                                 }
+
                                 (self.class && self.$el.attr('class', self['class']));
                                 (self.id && self.$el.attr('id', self.id));
                                 //self.afterRender();
@@ -1275,7 +1304,7 @@
                                         printDefs.base_href = baseHref();
                                         var printModel = options.model || Model();
                                         printModel.populate(printDefs);
-                                        self.tmpl(function (str) {
+                                        _.template.call(self, function (str) {
                                             str = str.replace(/@print_body/, $element.html());
                                             cb(str);
                                         }, printModel, options.template || 'core/SlicksPrintPage');
@@ -1382,7 +1411,9 @@
                     }
                 },
                 'match': function (path, parameterize) {
-                    var params = {}, route = null, possible_routes, slice, i, j, compare;
+                    var params = {},
+                        route = null,
+                        possible_routes, slice, i, j, compare;
                     for (route in Path.routes.defined) {
                         if (route !== null && route !== undefined) {
                             route = Path.routes.defined[route];
@@ -1510,7 +1541,10 @@
                     return this;
                 },
                 'partition': function () {
-                    var parts = [], options = [], re = /\(([^}]+?)\)/g, text, i;
+                    var parts = [],
+                        options = [],
+                        re = /\(([^}]+?)\)/g,
+                        text, i;
                     while (text = re.exec(this.path)) {
                         parts.push(text[1]);
                     }
@@ -1521,7 +1555,8 @@
                     return options;
                 },
                 'run': function () {
-                    var halt_execution = false, i, result, previous;
+                    var halt_execution = false,
+                        i, result, previous;
 
                     if (Path.routes.defined[this.path].hasOwnProperty("do_enter")) {
                         if (Path.routes.defined[this.path].do_enter.length > 0) {
@@ -1548,15 +1583,11 @@
             };
             return Path;
         };
+    exports.Model = Model;
+    exports.Collection = Collection;
+    exports.View = View;
+    exports.Router = Router;
 
-    _.xtend(root.Slicks, {
-        Router: Router,
-        Model: Model,
-        Collection: Collection,
-        View: View
-    });
+    return exports;
 
-
-}));
-
-
+});
