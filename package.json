@@ -1,6 +1,6 @@
 {
   "name": "slicks",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "An MVC framework for Javascript.",
   "main": "dist/slicks.js",
   "license": "MIT",
