@@ -132,36 +132,7 @@
             }
 
         },
-        Crypt = (function () {
-
-        var encode = function (s) {
-            var enc = "";
-            var str = "";
-            // make sure that input is string
-            str = s + "";
-
-            for (var i = 0; i < s.length; i++) {
-                // create block
-                var a = s.charCodeAt(i);
-                // bitwise XOR
-                var b = a ^ '120';
-                enc = enc + String.fromCharCode(b);
-            }
-            return enc;
-        };
-
-        return {
-            encrypt: function (clear) {
-
-                return btoa(encode(clear));
-            },
-            decrypt: function (sealed) {
-
-                return encode(atob(sealed));
-
-            }
-        };
-    }()),
+        
      _ = (function () {
         var happy = function (j) {
                 return (j !== null && j.error === undefined);
@@ -337,8 +308,6 @@
 
 
         return {
-            encrypt: Crypt.encrypt,
-            decrypt: Crypt.decrypt,
             happy: happy,
             xtend: xtend,
             inherits: inherits,
@@ -579,6 +548,39 @@
         });
     };
 
+    exports.cypher = (function () {
+
+        var encode = function (s) {
+            var enc = "";
+            var str = "";
+            // make sure that input is string
+            str = s + "";
+
+            for (var i = 0; i < s.length; i++) {
+                // create block
+                var a = s.charCodeAt(i);
+                // bitwise XOR
+                var b = a ^ '120';
+                enc = enc + String.fromCharCode(b);
+            }
+            return enc;
+        };
+
+        return {
+            encrypt: function (clear,key) {
+
+                return btoa(encode(clear));
+            },
+            decrypt: function (sealed, key) {
+
+                return encode(atob(sealed));
+
+            }
+        };
+    }());
+
+
+
 
 
     var Model = function (_url, _attributes, _socket) {
@@ -705,8 +707,8 @@
                         has: function (attr) {
                             return attributes.hasOwnProperty(attr);
                         },
-                        params: function (salt) {
-                            var enc = _.Crypt.encrypt(attributes, salt || Session.appName());
+                        params: function () {
+                            var enc = exports.cypher.encrypt(attributes, Session.key());
                             enc = encodeURIComponent(enc);
                             return enc;
                         },
@@ -1507,7 +1509,7 @@
 
                             if (q) {
                                 q = decodeURIComponent(q);
-                                q = _.Crypt.decrypt(q, Session.appName());
+                                q = exports.cypher.decrypt(q, Session.key());
                                 return q ? JSON.parse(q) : q;
                             }
                             return q;
