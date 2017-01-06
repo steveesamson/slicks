@@ -67,17 +67,13 @@ describe('#Slicks Model', function () {
 
     before(function (done) {
         browser = atomus()
+            .external(__dirname + '/../node_modules/stud/dist/stud.js')
             .external(__dirname + '/../dist/slicks.js')
             .html(htmlStr)
             .ready(function (errors, window) {
                 $ = window.$;
-                global.window = window;
-                global.slicks_tests = true;
-                seleto = window.seleto;
                 setUpOk = (errors === null);
                 var Slicks = window.Slicks;
-                
-                
                 View = Slicks.View;
                 Collection = Slicks.Collection;
                 Model = Slicks.Model;
@@ -383,13 +379,6 @@ describe('#Slicks View', function () {
         it("Expects $ to be defined ", function () {
             expect($).to.be.defined;
         });
-
-        // it("Expects seleto to be defined ", function () {
-        //     expect(seleto).to.be.defined;
-        // });
-        // it("Expects seleto to be equal $ ", function () {
-        //     expect(seleto).to.be.equal($);
-        // });
 
         it("Expects output to be defined ", function () {
             output = $('#output');

@@ -5,7 +5,7 @@
   "main": "dist/slicks.js",
   "license": "MIT",
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha --ui tdd --recursive ./test/slicks.js"
+    "test": "./node_modules/mocha/bin/mocha --ui tdd --recursive ./test/slicks.spec.js"
   },
   "keywords": [
     "mvc",
@@ -27,6 +27,7 @@
   "devDependencies": {
     "atomus": "^2.0.0",
     "chai": "^3.5.0",
-    "mocha": "^2.5.3"
+    "mocha": "^2.5.3",
+    "stud": "^1.1.0"
   }
 }

@@ -1,33 +1,32 @@
-(function(factory) {
+(function (factory) {
 
-  // Establish the root object, `window` (`self`) in the browser, or `global` on the server.
-  // We use `self` instead of `window` for `WebWorker` support.
-  var root = (typeof self == 'object' && self.self === self && self) ||
-            (typeof global == 'object' && global.global === global && global);
+    // Establish the root object, `window` (`self`) in the browser, or `global` on the server.
+    // We use `self` instead of `window` for `WebWorker` support.
+    var root = (typeof self == 'object' && self.self === self && self) ||
+        (typeof global == 'object' && global.global === global && global);
 
-  // Set up Slicks appropriately for the environment. Start with AMD.
-  if (typeof define === 'function' && define.amd) {
-    define(['jquery', 'exports'], function($, exports) {
-      // Export global even in AMD case in case this script is loaded with
-      // others that may still expect a global Slicks.
-      root.Slicks = factory(root, exports, $);
-    });
 
-  // Next for Node.js or CommonJS. jQuery may not be needed as a module.
-  } else if (typeof exports !== 'undefined') {
-    var $;
-    try { $ = require('jquery'); } catch (e) {}
-    factory(root, exports, $);
+    if (typeof define === 'function' && define.amd) {
+        define([], function () {
+            factory(root);
+        });
+    } else if (typeof module === 'object' && module.exports) {
+        module.exports = factory(root);
+    } else {
+        root.Slicks = factory(root);
+    }
+}(function (root) {
 
-  // Finally, as a browser global.
-  } else {
-    root.Slicks = factory(root, {}, (root.jQuery || root.Zepto || root.ender || root.$));
-  }
+    var $ = root.$,
+        stud = root.stud;
 
-})(function(root, exports, $){
 
     if (!$) {
-        throw Error("Include jQuery, Seleto, Zepto or ender on your page to use Slicks-mvc");
+        console.log("Include jQuery, Seleto, Zepto or ender on your page to use Slicks");
+    }
+
+    if (!stud) {
+        console.log("Include Stud.js on your page to use Slicks");
     }
 
     if (typeof Array.prototype.indexOf == 'undefined') {
@@ -57,530 +56,451 @@
         };
     }
 
-    const RE = /([^{]*)?(\{(\w+)\})?([^{]*)?/ig;
 
-    var isString = function (o) {
-            return typeof o === 'string';
-        },
-        stringbuilder = function (initialString) {
-            var content = [];
-            (initialString && content.push(initialString));
+    var _ = (function () {
+            var happy = function (j) {
+                    return (j !== null && j.error === undefined);
+                },
+                inherits = function (base) {
+                    function F() {}
+
+                    F.prototype = base;
+                    var f = new F;
+                    f.parent = F.prototype;
+                    return f;
+                },
+                xtend = function () {
+
+                    var o = arguments[0];
+
+                    for (var i = 1; i < arguments.length; ++i) {
+                        var options = arguments[i];
+                        for (var k in options) {
+                            if (options.hasOwnProperty(k)) {
+                                o[k] = options[k];
+                            }
+
+                        }
+                    }
+                },
+                isFunction = function (cb) {
+                    return typeof cb === "function";
+                },
+                makeName = function (str) {
+                    var index = str.indexOf('_');
+                    if (index < 0) {
+                        return str == 'id' ? str.toUpperCase() : (str.charAt(0)).toUpperCase() + str.substring(1);
+                    }
+                    var names = str.split('_');
+                    var new_name = '';
+                    names.forEach(function (s) {
+                        new_name += new_name.length > 0 ? " " + makeName(s) : makeName(s);
+                    });
+
+                    return new_name;
+
+                },
+                isArray = function (o) {
+                    return Array.isArray(o);
+                },
+                isString = function (o) {
+                    return typeof o === 'string';
+                },
+                isObject = function (o) {
+                    return typeof o === 'object';
+                },
+                each = function (arrayOrObject, cb) {
+                    if (isArray(arrayOrObject)) {
+                        for (var i = 0; i < arrayOrObject.length; ++i) {
+                            arrayOrObject[i] && cb && cb.call(arrayOrObject[i], i, arrayOrObject[i]);
+                        }
+                    } else if (isObject(arrayOrObject)) {
+                        for (var k in arrayOrObject) {
+                            cb && cb.call(arrayOrObject[k], k, arrayOrObject[k]);
+                        }
+                    }
+
+                },
+                uid = function () {
+                    return '_' + Math.random().toString(36).substr(2, 9);
+                },
+
+                attachEvent = function (evt, handler, context) {
+                    handler['context'] = context;
+                    if (!this[evt]) {
+                        this[evt] = [];
+                    }
+                    this[evt].push(handler);
+                },
+                detachEvent = function (evt) {
+                    delete this[evt];
+                },
+                baseName = function (path) {
+                    if (!path) return path;
+                    var lookfor = '';
+                    if (path.indexOf('\\') > -1) {
+                        lookfor = '\\';
+                    } else if (path.indexOf('/') > -1) {
+                        lookfor = '/';
+                    } else {
+                        return path;
+                    }
+                    var idx = path.lastIndexOf(lookfor);
+                    return path.substring(idx + 1);
+
+                },
+                isNumeric = function (n) {
+                    if (!n) {
+                        return false;
+                    }
+                    n = n.toString();
+                    if (n.startsWith('-') && n.length === 1) {
+                        n += '0';
+                    }
+                    if (n.endsWith('.')) {
+                        n += '0';
+                    }
+
+                    return n && n.toString().match(/^[-+]?[0-9]+(\.[0-9]+)?$/g);
+
+                },
+                isInteger = function (n) {
+                    return n && n.toString().match(/^[-+]?\d+$/g);
+                },
+                formatFields = function (map) {
+                    //console.log(map);
+                    var copy = {};
+                    each(map, function (k, v) {
+                        copy[k] = v;
+                        if (contains(k, ['amount', 'price', 'sum'])) {
+                            if (isNumeric(v)) {
+                                copy[k] = format(v);
+                            }
+                        }
+
+                    });
+
+                    return copy;
+                },
+                contains = function (str, needle) {
+
+                    str = str.toLowerCase();
+
+                    var has = false;
+                    if (str.length === 0) return has;
+                    if (isArray(needle)) {
+                        each(needle, function (i) {
+                            if (str.indexOf(needle[i].toLowerCase()) !== -1) {
+                                has = true;
+                            }
+                        });
+                    } else {
+                        has = str.indexOf(needle.toLowerCase()) !== -1;
+                    }
+
+                    return has;
+
+                },
+                format = function (amount) {
+                    var i = parseFloat(amount),
+                        delimitNumbers = function (str) {
+                            return (str + "").replace(/\b(\d+)((\.\d+)*)\b/g, function (a, b, c) {
+                                return (b.charAt(0) > 0 && !(c || ".").lastIndexOf(".") ? b.replace(/(\d)(?=(\d{3})+$)/g, "$1,") : b) + c;
+                            });
+                        };
+                    if (isNaN(i)) {
+                        i = 0.00;
+                    }
+                    var minus = '';
+                    if (i < 0) {
+                        minus = '-';
+                    }
+                    i = Math.abs(i);
+                    i = parseInt((i + .005) * 100);
+                    i = i / 100;
+                    var s = String(i);
+                    if (s.indexOf('.') < 0) {
+                        s += '.00';
+                    }
+                    if (s.indexOf('.') == (s.length - 2)) {
+                        s += '0';
+                    }
+                    s = minus + s;
+
+                    return delimitNumbers(s);
+                };
+
 
             return {
-                append: function (text) {
-                    content.push(text);
-                    this.length = content.length;
-                    return this;
-                },
-                length: content.length,
-                toString: function () {
-                    return content.join('');
-                }
+                happy: happy,
+                xtend: xtend,
+                inherits: inherits,
+                isFunction: isFunction,
+                makeName: makeName,
+                isArray: isArray,
+                each: each,
+                uid: uid,
+                attachEvent: attachEvent,
+                detachEvent: detachEvent,
+                baseName: baseName,
+                isNumeric: isNumeric,
+                isInteger: isInteger,
+                formatFields: formatFields,
+                contains: contains,
+                format: format
             };
 
-        },
-        renderString = function (templateString, options, cb) {
-            var sb = stringbuilder();
+        }()),
+        Ext = function () {
 
-            templateString = templateString.trim().replace(/"/g, "'");
-            templateString = templateString.replace(/[\n\r]/g, ' ');
-            templateString = templateString.replace(/\s+/g, ' ');
+            (function () {
+                var oldClean = $.cleanData;
 
-            templateString.replace(
-                RE,
-                function ($0, $1, $2, $3, $4) {
-                    if ($1) {
-                        sb.append($1);
+
+                $.cleanData = function (elems) {
+                    for (var i = 0, elem;
+                        (elem = elems[i]) !== undefined; i++) {
+                        $(elem).triggerHandler("destroyed");
                     }
-                    if ($3) {
-                        sb.append(options[$3]);
-                    }
+                    oldClean(elems);
+                };
+            })();
 
-                    if ($4) {
-                        sb.append($4);
-                    }
 
+            $.notify = function (txt, type) {
+                $('p.error, p.message, p.success').hide('slow');
+                if (!txt) {
                     return;
                 }
-            );
-            cb && cb(false, sb.toString());
-        },
-        stud = {
-            cache: {},
-            buffer: function (startString) {
-
-                return stringbuilder(startString);
-            },
-            render: function (name, data, cb) {
-                var str = this.cache[name](data);
-                if (cb) cb(str);
-                else return str;
-            },
-            isRegistered: function (name) {
-                return !!this.cache[name];
-            },
-            register: function (name, fn) {
-                if (!name || !fn || !(typeof fn === 'function')) {
-                    console.error("Cannot register template...");
-                    return;
-                }
-                this.cache[name] = fn;
-            },
-            template: function (templateString, options, cb) {
-
-                renderString(templateString, options, cb);
-            }
-
-        },
-        
-     _ = (function () {
-        var happy = function (j) {
-                return (j !== null && j.error === undefined);
-            },
-            inherits = function (base) {
-                function F() {}
-
-                F.prototype = base;
-                var f = new F;
-                f.parent = F.prototype;
-                return f;
-            },
-            xtend = function () {
-
-                var o = arguments[0];
-
-                for (var i = 1; i < arguments.length; ++i) {
-                    var options = arguments[i];
-                    for (var k in options) {
-                        if (options.hasOwnProperty(k)) {
-                            o[k] = options[k];
-                        }
-
-                    }
-                }
-            },
-            isFunction = function (cb) {
-                return typeof cb === "function";
-            },
-            makeName = function (str) {
-                var index = str.indexOf('_');
-                if (index < 0) {
-                    return str == 'id' ? str.toUpperCase() : (str.charAt(0)).toUpperCase() + str.substring(1);
-                }
-                var names = str.split('_');
-                var new_name = '';
-                names.forEach(function (s) {
-                    new_name += new_name.length > 0 ? " " + makeName(s) : makeName(s);
-                });
-
-                return new_name;
-
-            },
-            isArray = function (o) {
-                return Array.isArray(o);
-            },
-            isString = function (o) {
-                return typeof o === 'string';
-            },
-            isObject = function (o) {
-                return typeof o === 'object';
-            },
-            each = function (arrayOrObject, cb) {
-                if (isArray(arrayOrObject)) {
-                    for (var i = 0; i < arrayOrObject.length; ++i) {
-                        arrayOrObject[i] && cb && cb.call(arrayOrObject[i], i, arrayOrObject[i]);
-                    }
-                } else if (isObject(arrayOrObject)) {
-                    for (var k in arrayOrObject) {
-                        cb && cb.call(arrayOrObject[k], k, arrayOrObject[k]);
-                    }
-                }
-
-            },
-            uid = function () {
-                return '_' + Math.random().toString(36).substr(2, 9);
-            },
-
-            attachEvent = function (evt, handler, context) {
-                handler['context'] = context;
-                if (!this[evt]) {
-                    this[evt] = [];
-                }
-                this[evt].push(handler);
-            },
-            detachEvent = function (evt) {
-                delete this[evt];
-            },
-            baseName = function (path) {
-                if (!path) return path;
-                var lookfor = '';
-                if (path.indexOf('\\') > -1) {
-                    lookfor = '\\';
-                } else if (path.indexOf('/') > -1) {
-                    lookfor = '/';
+                var msg = $('p.' + type);
+                if (msg) {
+                    msg.find('.' + type.trim() + '-message').text(txt).end().fadeIn('slow');
+                    setTimeout(function () {
+                        msg.hide('slow');
+                    }, type == 'error' ? 10000 + txt.length : 8000 + txt.length);
                 } else {
-                    return path;
+                    alert(txt);
                 }
-                var idx = path.lastIndexOf(lookfor);
-                return path.substring(idx + 1);
-
-            },
-            isNumeric = function (n) {
-                if (!n) {
-                    return false;
-                }
-                n = n.toString();
-                if (n.startsWith('-') && n.length === 1) {
-                    n += '0';
-                }
-                if (n.endsWith('.')) {
-                    n += '0';
-                }
-
-                return n && n.toString().match(/^[-+]?[0-9]+(\.[0-9]+)?$/g);
-
-            },
-            isInteger = function (n) {
-                return n && n.toString().match(/^[-+]?\d+$/g);
-            },
-            formatFields = function (map) {
-                //console.log(map);
-                var copy = {};
-                each(map, function (k, v) {
-                    copy[k] = v;
-                    if (contains(k, ['amount', 'price', 'sum'])) {
-                        if (isNumeric(v)) {
-                            copy[k] = format(v);
-                        }
-                    }
-
-                });
-
-                return copy;
-            },
-            contains = function (str, needle) {
-
-                str = str.toLowerCase();
-
-                var has = false;
-                if (str.length === 0) return has;
-                if (isArray(needle)) {
-                    each(needle, function (i) {
-                        if (str.indexOf(needle[i].toLowerCase()) !== -1) {
-                            has = true;
-                        }
-                    });
-                } else {
-                    has = str.indexOf(needle.toLowerCase()) !== -1;
-                }
-
-                return has;
-
-            },
-            format = function (amount) {
-                var i = parseFloat(amount),
-                    delimitNumbers = function (str) {
-                        return (str + "").replace(/\b(\d+)((\.\d+)*)\b/g, function (a, b, c) {
-                            return (b.charAt(0) > 0 && !(c || ".").lastIndexOf(".") ? b.replace(/(\d)(?=(\d{3})+$)/g, "$1,") : b) + c;
-                        });
-                    };
-                if (isNaN(i)) {
-                    i = 0.00;
-                }
-                var minus = '';
-                if (i < 0) {
-                    minus = '-';
-                }
-                i = Math.abs(i);
-                i = parseInt((i + .005) * 100);
-                i = i / 100;
-                var s = String(i);
-                if (s.indexOf('.') < 0) {
-                    s += '.00';
-                }
-                if (s.indexOf('.') == (s.length - 2)) {
-                    s += '0';
-                }
-                s = minus + s;
-
-                return delimitNumbers(s);
             };
 
-
-        return {
-            happy: happy,
-            xtend: xtend,
-            inherits: inherits,
-            isFunction: isFunction,
-            makeName: makeName,
-            isArray: isArray,
-            each: each,
-            uid: uid,
-            attachEvent: attachEvent,
-            detachEvent: detachEvent,
-            baseName: baseName,
-            isNumeric: isNumeric,
-            isInteger: isInteger,
-            formatFields: formatFields,
-            contains: contains,
-            format: format
-        };
-
-    }()),
-     Ext = function () {
-
-        (function () {
-            var oldClean = $.cleanData;
-
-
-            $.cleanData = function (elems) {
-                for (var i = 0, elem;
-                    (elem = elems[i]) !== undefined; i++) {
-                    $(elem).triggerHandler("destroyed");
-                }
-                oldClean(elems);
-            };
-        })();
-
-
-        $.notify = function (txt, type) {
-            $('p.error, p.message, p.success').hide('slow');
-            if (!txt) {
-                return;
-            }
-            var msg = $('p.' + type);
-            if (msg) {
-                msg.find('.' + type.trim() + '-message').text(txt).end().fadeIn('slow');
-                setTimeout(function () {
-                    msg.hide('slow');
-                }, type == 'error' ? 10000 + txt.length : 8000 + txt.length);
-            } else {
-                alert(txt);
-            }
-        };
-
-        $.mapob = function ($el) {
-            var map = {};
-            $el.find(':input').not(':button').each(function () {
-                var dis = $(this);
-                var name = dis.attr('name');
-                if (!name) return;
-                if (dis.is(':checkbox') || dis.is(':radio')) {
-                    if (dis.is(':checked')) {
-                        map[name] = dis.val() == 'on' ? 'true' : dis.val();
+            $.mapob = function ($el) {
+                var map = {};
+                $el.find(':input').not(':button').each(function () {
+                    var dis = $(this);
+                    var name = dis.attr('name');
+                    if (!name) return;
+                    if (dis.is(':checkbox') || dis.is(':radio')) {
+                        if (dis.is(':checked')) {
+                            map[name] = dis.val() == 'on' ? 'true' : dis.val();
+                        } else {
+                            map[name] = dis.val() == 'on' ? 'false' : '';
+                        }
                     } else {
-                        map[name] = dis.val() == 'on' ? 'false' : '';
-                    }
-                } else {
-                    var value = dis.val();
-                    if ($.trim(value)) {
-                        if (name !== 'Zebra_DatePicker_Icon' && name !== undefined) {
-                            map[name] = value;
+                        var value = dis.val();
+                        if ($.trim(value)) {
+                            if (name !== 'Zebra_DatePicker_Icon' && name !== undefined) {
+                                map[name] = value;
+                            }
                         }
                     }
-                }
-            });
-            return map;
-        };
+                });
+                return map;
+            };
 
-        $.fn.loadImage = function (src, cb) {
-            return $(this).each(function () {
-                var image_container = $(this);
-                image_container.empty().fadeIn('slow').addClass('image_loading');
-                var img = new Image();
-                $(img).load(
+            $.fn.loadImage = function (src, cb) {
+                return $(this).each(function () {
+                    var image_container = $(this);
+                    image_container.empty().fadeIn('slow').addClass('image_loading');
+                    var img = new Image();
+                    $(img).load(
+                        function () {
+                            $(this).css('display', 'none');
+                            image_container.removeClass('image_loading').empty().append(this);
+                            $(this).fadeIn('slow', function () {
+                                cb && $.isFunction(cb) && cb();
+                            });
+                        }).error(
+                        function () {
+                            image_container.remove();
+                        }).attr('src', src + '?' + (new Date()).getTime());
+                });
+            };
+            $.fn.showMe = function (cb) {
+                cb && cb();
+                return $(this).each(function () {
+                    $(this).removeClass('hide');
+
+                });
+            };
+            $.fn.hideMe = function (cb) {
+                cb && cb();
+                return $(this).each(function () {
+                    $(this).addClass('hide');
+
+                });
+            };
+            $.fn.xhange = function (context) {
+                return $(this).change(
                     function () {
-                        $(this).css('display', 'none');
-                        image_container.removeClass('image_loading').empty().append(this);
-                        $(this).fadeIn('slow', function () {
-                            cb && $.isFunction(cb) && cb();
+                        var sel = $(this).val();
+                        var name = $(this).attr('name');
+                        context.model && context.model.set(name, sel);
+                    }
+                )
+            };
+            $.fn.clear = function (removeTip) {
+
+                return $(this).each(function () {
+                    $(this).find('[type=file], [type=text], [type=password], [type=hidden], select, textarea')
+                        .each(function () {
+                            var input = $(this);
+                            input.val('');
+                            if (input.is('[data-validation]')) {
+                                removeTip && removeTip(input);
+                                input.change && input.change();
+                            }
                         });
-                    }).error(
-                    function () {
-                        image_container.remove();
-                    }).attr('src', src + '?' + (new Date()).getTime());
-            });
-        };
-        $.fn.showMe = function (cb) {
-            cb && cb();
-            return $(this).each(function () {
-                $(this).removeClass('hide');
-
-            });
-        };
-        $.fn.hideMe = function (cb) {
-            cb && cb();
-            return $(this).each(function () {
-                $(this).addClass('hide');
-
-            });
-        };
-        $.fn.xhange = function (context) {
-            return $(this).change(
-                function () {
-                    var sel = $(this).val();
-                    var name = $(this).attr('name');
-                    context.model && context.model.set(name, sel);
-                }
-            )
-        };
-        $.fn.clear = function (removeTip) {
-
-            return $(this).each(function () {
-                $(this).find('[type=file], [type=text], [type=password], [type=hidden], select, textarea')
-                    .each(function () {
-                        var input = $(this);
-                        input.val('');
-                        if (input.is('[data-validation]')) {
-                            removeTip && removeTip(input);
-                            input.change && input.change();
+                })
+            };
+            $.fn.only_numeric = function () {
+                return $(this).each(function () {
+                    $(this).keyup(function () {
+                        if (!_.isNumeric($(this).val())) {
+                            $(this).val('');
                         }
                     });
-            })
-        };
-        $.fn.only_numeric = function () {
-            return $(this).each(function () {
-                $(this).keyup(function () {
-                    if (!_.isNumeric($(this).val())) {
-                        $(this).val('');
+                });
+            };
+            $.fn.only_integer = function () {
+                return $(this).each(function () {
+                    $(this).keyup(function () {
+                        if (!_.isInteger($(this).val())) {
+                            $(this).val('');
+                        }
+                    });
+                });
+            };
+            $.fn.swapWith = function (tag) {
+                return this.each(function () {
+                    var elm = $(this),
+                        new_elm = null;
+                    switch (tag.toLowerCase()) {
+                        case 'select':
+                            new_elm = $('<select></select>');
+                            break;
+                        case 'text':
+                            new_elm = $('<input type="text"/>');
+                            break;
+                        case 'password':
+                            new_elm = $('<input type="password"/>');
+                            break;
+                        case 'textarea':
+                            new_elm = $('<textarea></textarea>');
+                            break;
+                    }
+                    elm.hide(function () {
+                        new_elm.attr('name', elm.attr('name')).attr('class', elm.attr('class')).attr('id', elm.attr('id')).attr('value', elm.attr('value'));
+                        elm = elm.replaceWith(new_elm);
+                    })
+                });
+            };
+            $.fn.swapClass = function (c1, c2) {
+                return this.each(function () {
+                    if ($(this).is('.' + c1)) {
+                        $(this).removeClass(c1).addClass(c2);
+                    } else {
+                        $(this).removeClass(c2).addClass(c1);
                     }
                 });
-            });
+            };
+
+            $.extLoaded = true;
         };
-        $.fn.only_integer = function () {
-            return $(this).each(function () {
-                $(this).keyup(function () {
-                    if (!_.isInteger($(this).val())) {
-                        $(this).val('');
+    _.template = function (cb, mdl, tmpl_name) {
+            var self = this,
+                load = ((mdl && mdl.toObject()) || (this.model && this.model.toObject()) || {}),
+                template;
+            load = this.isEditor ? load : _.formatFields(load);
+            if (this.template && this.template.startsWith('@')) {
+
+                template = this.template.substring(1);
+                stud.template(template, load, function (error, str) {
+                    if (error) {
+                        console.log(error);
+                        return;
                     }
+                    cb && cb.call(self, str);
                 });
-            });
-        };
-        $.fn.swapWith = function (tag) {
-            return this.each(function () {
-                var elm = $(this),
-                    new_elm = null;
-                switch (tag.toLowerCase()) {
-                    case 'select':
-                        new_elm = $('<select></select>');
-                        break;
-                    case 'text':
-                        new_elm = $('<input type="text"/>');
-                        break;
-                    case 'password':
-                        new_elm = $('<input type="password"/>');
-                        break;
-                    case 'textarea':
-                        new_elm = $('<textarea></textarea>');
-                        break;
-                }
-                elm.hide(function () {
-                    new_elm.attr('name', elm.attr('name')).attr('class', elm.attr('class')).attr('id', elm.attr('id')).attr('value', elm.attr('value'));
-                    elm = elm.replaceWith(new_elm);
-                })
-            });
-        };
-        $.fn.swapClass = function (c1, c2) {
-            return this.each(function () {
-                if ($(this).is('.' + c1)) {
-                    $(this).removeClass(c1).addClass(c2);
-                } else {
-                    $(this).removeClass(c2).addClass(c1);
-                }
-            });
-        };
 
-        $.extLoaded = true;
-    };
+            } else {
 
-     _.template = function (cb, mdl, tmpl_name) {
-        var self = this,
-            load = ((mdl && mdl.toObject()) || (this.model && this.model.toObject()) || {}),
-            template;
-        load = this.isEditor ? load : _.formatFields(load);
-        if (this.template && this.template.startsWith('@')) {
-
-            template = this.template.substring(1);
-            stud.template(template, load, function (error, str) {
-                if (error) {
-                    console.log(error);
+                template = tmpl_name || this.template;
+                if (!template) {
+                    cb && cb('');
                     return;
                 }
-                cb && cb.call(self, str);
-            });
-
-        } else {
-
-            template = tmpl_name || this.template;
-            if (!template) {
-                cb && cb('');
-                return;
+                template += '.html';
+                stud.render(template, load, function (error, str) {
+                    if (error) {
+                        console.log(error);
+                        return;
+                    }
+                    cb && cb.call(self, str);
+                });
             }
-            template += '.html';
-            stud.render(template, load, function (error, str) {
-                if (error) {
-                    console.log(error);
-                    return;
-                }
-                cb && cb.call(self, str);
-            });
-        }
-    };
+        },
+        Slicks = {
+            sync: function (url, method, data, cb) {
 
-    exports.sync = function (url, method, data, cb) {
-
-        $.ajax({
-            type: method,
-            beforeSend: function (xhr) {
-                $('.data-connecting').show();
-                Session.isAuthenticated() && xhr.setRequestHeader('x-csrf-token', Session.user().token || '');
+                $.ajax({
+                    type: method,
+                    beforeSend: function (xhr) {
+                        $('.data-connecting').show();
+                        Session.isAuthenticated() && xhr.setRequestHeader('x-csrf-token', Session.user().token || '');
+                    },
+                    url: url,
+                    data: data,
+                    success: function (res) {
+                        $('.data-connecting').hide();
+                        cb(res);
+                    },
+                    error: function () {
+                        $('.data-connecting').hide();
+                    },
+                    dataType: 'json'
+                });
             },
-            url: url,
-            data: data,
-            success: function (res) {
-                $('.data-connecting').hide();
-                cb(res);
-            },
-            error: function () {
-                $('.data-connecting').hide();
-            },
-            dataType: 'json'
-        });
-    };
+            cypher: (function () {
 
-    exports.cypher = (function () {
+                var encode = function (s) {
+                    var enc = "";
+                    var str = "";
+                    // make sure that input is string
+                    str = s + "";
 
-        var encode = function (s) {
-            var enc = "";
-            var str = "";
-            // make sure that input is string
-            str = s + "";
+                    for (var i = 0; i < s.length; i++) {
+                        // create block
+                        var a = s.charCodeAt(i);
+                        // bitwise XOR
+                        var b = a ^ '120';
+                        enc = enc + String.fromCharCode(b);
+                    }
+                    return enc;
+                };
 
-            for (var i = 0; i < s.length; i++) {
-                // create block
-                var a = s.charCodeAt(i);
-                // bitwise XOR
-                var b = a ^ '120';
-                enc = enc + String.fromCharCode(b);
-            }
-            return enc;
+                return {
+                    encrypt: function (clear, key) {
+
+                        return btoa(encode(clear));
+                    },
+                    decrypt: function (sealed, key) {
+
+                        return encode(atob(sealed));
+
+                    }
+                };
+            }())
         };
-
-        return {
-            encrypt: function (clear,key) {
-
-                return btoa(encode(clear));
-            },
-            decrypt: function (sealed, key) {
-
-                return encode(atob(sealed));
-
-            }
-        };
-    }());
-
-
-
 
 
     var Model = function (_url, _attributes, _socket) {
@@ -708,7 +628,7 @@
                             return attributes.hasOwnProperty(attr);
                         },
                         params: function () {
-                            var enc = exports.cypher.encrypt(attributes, Session.key());
+                            var enc = Slicks.cypher.encrypt(attributes, Session.key());
                             enc = encodeURIComponent(enc);
                             return enc;
                         },
@@ -1509,7 +1429,7 @@
 
                             if (q) {
                                 q = decodeURIComponent(q);
-                                q = exports.cypher.decrypt(q, Session.key());
+                                q = Slicks.cypher.decrypt(q, Session.key());
                                 return q ? JSON.parse(q) : q;
                             }
                             return q;
@@ -1585,11 +1505,11 @@
             };
             return Path;
         };
-    exports.Model = Model;
-    exports.Collection = Collection;
-    exports.View = View;
-    exports.Router = Router;
+    Slicks.Model = Model;
+    Slicks.Collection = Collection;
+    Slicks.View = View;
+    Slicks.Router = Router;
 
-    return exports;
+    return Slicks;
 
-});
+}));
