@@ -2472,24 +2472,25 @@
 
     };
 
-    if ((typeof root.Session === 'undefined' || !root.Session) && typeof  root.sessionStorage !== 'undefined'){
 
-        root.Keys = {
-            Enter: 13,
-            Shift: 16,
-            Tab: 9,
-            Escape: 27,
-            LeftArrow: 37
-        };
+    root.Keys = {
+        Enter: 13,
+        Shift: 16,
+        Tab: 9,
+        Escape: 27,
+        LeftArrow: 37
+    };
 
-        for (var i in Keys) {
-            Keys['is' + i] = (function (compare) {
-                return function (e) {
-                    return (e.keyCode || e.which) === compare;
+    for (var i in Keys) {
+        Keys['is' + i] = (function (compare) {
+            return function (e) {
+                return (e.keyCode || e.which) === compare;
 
-                };
-            })(Keys[i]);
-        }
+            };
+        })(Keys[i]);
+    }
+
+    if (typeof  root.sessionStorage !== 'undefined'){
 
         sessionStorage.clear();
 
