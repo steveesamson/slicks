@@ -22,6 +22,10 @@
         io = root.io;
 
 
+    if (!root.sessionStorage) {
+        console.log("Unsupported browser, please switch to a modern browser, i.e chrome or firefox");
+    }
+
     if (!$) {
         console.log("Include jQuery on your page to use Slicks");
     }
@@ -2468,7 +2472,7 @@
 
     };
 
-    if (typeof root.Session === 'undefined' || !root.Session) {
+    if ((typeof root.Session === 'undefined' || !root.Session) && typeof  root.sessionStorage !== 'undefined'){
 
         root.Keys = {
             Enter: 13,
