@@ -34,6 +34,9 @@
         console.log("Include Stud.js on your page to use Slicks");
     }
 
+    /*!
+        Extending JavaScript
+     */
 
     if (typeof Array.prototype.indexOf == 'undefined') {
         Array.prototype.indexOf = function (obj, start) {
@@ -68,18 +71,51 @@
         };
     }
 
+    /*!
+        Utilities
+     */
 
     var _ = (function () {
         var happy = function (j) {
                 return (j !== null && j.error === undefined);
             },
+            isString = function (o) {
+                return typeof o === 'string';
+            },
+            isObject = function (o) {
+                return !Array.isArray(o) && typeof o === 'object';
+            },
+            each = function (arrayOrObject, cb) {
+                if (Array.isArray(arrayOrObject)) {
+                    for (var i = 0; i < arrayOrObject.length; ++i) {
+                        arrayOrObject[i] && cb && cb.call(arrayOrObject[i], i, arrayOrObject[i]);
+                    }
+                } else if (isObject(arrayOrObject)) {
+                    for (var k in arrayOrObject) {
+                        cb && cb.call(arrayOrObject[k], k, arrayOrObject[k]);
+                    }
+                }
 
+            },
+            map = function (array, cb) {
+                var accepted = [];
+                each(array, function (i) {
+
+                    var valid = cb && cb.call(this, i);
+                    if (valid) {
+                        accepted.push(valid);
+                    }
+                });
+                return accepted;
+            },
             xtend = function () {
 
                 var o = arguments[0];
 
+
                 for (var i = 1; i < arguments.length; ++i) {
                     var options = arguments[i];
+
                     for (var k in options) {
                         if (options.hasOwnProperty(k)) {
                             o[k] = options[k];
@@ -165,43 +201,19 @@
                 }
                 var names = str.split('_');
                 var new_name = '';
-                names.forEach(function (s) {
+
+                each(names, function (i, s) {
+
                     new_name += new_name.length > 0 ? " " + makeName(s) : makeName(s);
+
                 });
 
                 return new_name;
 
             },
-            isString = function (o) {
-                return typeof o === 'string';
-            },
-            isObject = function (o) {
-                return !Array.isArray(o) && typeof o === 'object';
-            },
-            each = function (arrayOrObject, cb) {
-                if (Array.isArray(arrayOrObject)) {
-                    for (var i = 0; i < arrayOrObject.length; ++i) {
-                        arrayOrObject[i] && cb && cb.call(arrayOrObject[i], i, arrayOrObject[i]);
-                    }
-                } else if (isObject(arrayOrObject)) {
-                    for (var k in arrayOrObject) {
-                        cb && cb.call(arrayOrObject[k], k, arrayOrObject[k]);
-                    }
-                }
 
-            },
-            map = function (array, cb) {
-                var accepted = [];
-                each(array, function (i) {
-
-                    var valid = cb && cb.call(this, i);
-                    if (valid) {
-                        accepted.push(valid);
-                    }
-                });
-                return accepted;
-            },
             uid = function () {
+
                 return '_' + Math.random().toString(36).substr(2, 9);
             },
             attachEvent = function (evt, handler, context) {
@@ -273,9 +285,9 @@
                 needle = needle.trim().toLowerCase();
 
                 if (Array.isArray(array)) {
-                    each(array, function (i) {
+                    each(array, function (i, v) {
 
-                        if (needle === this.trim().toLowerCase()) {
+                        if (needle === v.trim().toLowerCase()) {
                             has = true;
                         }
                     });
@@ -322,6 +334,16 @@
 
                 load = this.isEditor ? load : formatFields(load);
 
+                var b4Ret = function (str) {
+
+                    var $str = $('<div/>').html(str);
+
+                    $str.find('[data-hideif]').hideIf(load);
+
+                    return $str.html();
+
+                };
+
                 if (!template) {
                     if (cb) cb('');
                     else return "";
@@ -339,19 +361,13 @@
                                 console.log(error);
                                 return;
                             }
-                            var $str = $('<div/>').html(str);
 
-                            $str.find('[data-hideif]').hideIf(load);
-
-                            cb && cb.call(self, $str.html());
+                            cb && cb.call(self, b4Ret(str));
                         });
                     } else {
                         var str = stud.template(template, load);
 
-                        var $str = $('<div/>').html(str);
-
-                        $str.find('[data-hideif]').hideIf(load);
-                        return $str.html();
+                        return b4Ret(str);
                     }
 
 
@@ -365,19 +381,14 @@
                                 return;
                             }
 
-                            var $str = $('<div/>').html(str);
 
-                            $str.find('[data-hideif]').hideIf(load);
-
-                            cb && cb.call(self, $str.html());
+                            cb && cb.call(self, b4Ret(str));
                         });
                     } else {
                         var str = stud.render(template, load);
 
-                        var $str = $('<div/>').html(str);
 
-                        $str.find('[data-hideif]').hideIf(load);
-                        return $str.html();
+                        return b4Ret(str);
                     }
 
                 }
@@ -395,17 +406,15 @@
                     array = array.toLowerCase().split(',');
                 }
 
-                if (isString(array) && !Array.isArray(array)) {
+                if (isString(array)) {
                     array = [array];
-                    //return Error('Array expected in inArray');
                 }
 
-                console.log('Needle: ', needle);
                 if (!needle) return false;
                 needle = needle.toLowerCase();
                 var found = false;
-                each(array, function () {
-                    if (this.trim().toLowerCase() === needle) {
+                each(array, function (i, v) {
+                    if (v.trim().toLowerCase() === needle) {
                         found = true;
                     }
                 });
@@ -420,7 +429,7 @@
                     normalizeRoles = function () {
                         var map = {};
 
-                        for (var role in roles) {
+                        each(roles, function (role, def) {
 
                             map[role] = {
 
@@ -429,49 +438,32 @@
 
                             };
 
-                            if (roles[role].inherits) {
+                            if (def.inherits) {
 
-                                map[role].inherits = roles[role].inherits;
+                                map[role].inherits = def.inherits;
                             }
 
-                            var permissions = roles[role].can;
+                            each(def.can, function (i, operation) {
 
-                            for (var i = 0; i < permissions.length; ++i) {
-
-                                var operation = permissions[i];
-
-                                if (typeof operation === 'string') {
+                                if (isString(operation)) {
 
                                     map[role].permissions.push(operation);
                                     map[role].can[operation] = function () {
                                         return true;
                                     };
 
-                                    //} else if (typeof operation === 'object' && typeof operation.when === 'function') {
-                                } else if (typeof operation === 'object') {
+                                } else if (isObject(operation)) {
 
-                                    //console.log('When: ', operation.when);
-                                    //
                                     map[role].permissions.push(operation.name);
                                     map[role].can[operation.name] = new Function("param", "return " + operation.when + ";");
 
-                                    //map[role].can[operation.name] = function(param){
-                                    //   return eval(operation.when);
-                                    //};
-
-                                    //operation.when('deposit_contributions', {});
                                 }
 
+                            });
 
-                            }
-
-                            // Ignore definitions we don't understand
-
-                        }
+                        });
 
                         roles = map;
-
-
                     };
 
                 normalizeRoles();
@@ -479,10 +471,11 @@
 
                 return {
                     cans: function (role) {
+
                         return roles[role] && roles[role].permissions;
                     },
                     has: function (role, action) {
-                        //return roles[role]? roles[role].permissions.join(',') : '';
+
                         return roles[role] && roles[role].permissions.indexOf(action) !== -1;
                     },
                     can: function (role, operation, options, cb) {
@@ -496,12 +489,6 @@
                         // Check if this role has this operation
                         if ($role.can[operation]) {
 
-                            //console.log('Options: ', options,'Real Func: ', $role.can[operation].toString());
-
-                            //// Not a function so we are good
-                            //if(typeof $role.can[operation] !== 'function') {
-                            //    return true;
-                            //}
                             // If the function check passes return true
                             if ($role.can[operation](options)) {
                                 return cb ? cb(true) : true;
@@ -515,11 +502,12 @@
 
                         var cans = 0;
 
-                        for (var i = 0; i < $role.inherits.length; ++i) {
-                            if (this.can($role.inherits[i], operation, options)) {
+                        each($role.inherits, function (i, _role) {
+
+                            if (this.can(_role, operation, options)) {
                                 ++cans;
                             }
-                        }
+                        });
 
                         return cb ? cb(cans > 0) : (cans > 0);
                         // Check child roles until one returns true or all return false
@@ -578,286 +566,472 @@
 
     }());
 
-    if (!root.SlicksExtended) {
-        //console.log("Extending...");
-        (function () {
-            var oldClean = $.cleanData;
+    root.Keys = {
+        Enter: 13,
+        Shift: 16,
+        Tab: 9,
+        Escape: 27,
+        LeftArrow: 37
+    };
 
+    _.each(Keys, function (i, v) {
 
-            $.cleanData = function (elems) {
-                //console.log('Cleaning...');
-                for (var i = 0, elem;
-                     (elem = elems[i]) !== undefined; i++) {
-                    $(elem).trigger("destroyed");
-                }
-                oldClean(elems);
+        Keys['is' + i] = (function (compare) {
+            return function (e) {
+                return (e.keyCode || e.which) === compare;
+
             };
-        })();
+        })(v);
+
+    });
 
 
-        $.notify = function (txt, type) {
-            $('p.error, p.message, p.success').hide('slow');
-            if (!txt) {
-                return;
+
+    /*!
+     Extending JQuery, these are plugins
+     */
+    (function () {
+        var oldClean = $.cleanData;
+
+        $.cleanData = function (elems) {
+            //console.log('Cleaning...');
+            for (var i = 0, elem;
+                 (elem = elems[i]) !== undefined; i++) {
+                $(elem).trigger("destroyed");
             }
-            var msg = $('p.' + type);
-            if (msg) {
-                msg.find('.' + type.trim() + '-message').text(txt).end().fadeIn('slow');
-                setTimeout(function () {
-                    msg.hide('slow');
-                }, type == 'error' ? 10000 + txt.length : 8000 + txt.length);
+            oldClean(elems);
+        };
+
+    })();
+
+
+    $.notify = function (txt, type) {
+        $('p.error, p.message, p.success').hide('slow');
+        if (!txt) {
+            return;
+        }
+        var msg = $('p.' + type);
+        if (msg) {
+            msg.find('.' + type.trim() + '-message').text(txt).end().fadeIn('slow');
+            setTimeout(function () {
+                msg.hide('slow');
+            }, type == 'error' ? 10000 + txt.length : 8000 + txt.length);
+        } else {
+            alert(txt);
+        }
+    };
+
+    $.mapob = function ($el) {
+        var map = {};
+        $el.find(':input').not(':button').each(function () {
+            var dis = $(this);
+            var name = dis.attr('name');
+            if (!name) return;
+            if (dis.is(':checkbox') || dis.is(':radio')) {
+                if (dis.is(':checked')) {
+                    map[name] = dis.val() == 'on' ? 'true' : dis.val();
+                } else {
+                    map[name] = dis.val() == 'on' ? 'false' : '';
+                }
             } else {
-                alert(txt);
+                var value = dis.val();
+                if ($.trim(value)) {
+                    if (name !== 'Zebra_DatePicker_Icon' && name !== undefined) {
+                        map[name] = value;
+                    }
+                }
             }
-        };
+        });
+        return map;
+    };
 
-        $.mapob = function ($el) {
-            var map = {};
-            $el.find(':input').not(':button').each(function () {
-                var dis = $(this);
-                var name = dis.attr('name');
-                if (!name) return;
-                if (dis.is(':checkbox') || dis.is(':radio')) {
-                    if (dis.is(':checked')) {
-                        map[name] = dis.val() == 'on' ? 'true' : dis.val();
-                    } else {
-                        map[name] = dis.val() == 'on' ? 'false' : '';
-                    }
-                } else {
-                    var value = dis.val();
-                    if ($.trim(value)) {
-                        if (name !== 'Zebra_DatePicker_Icon' && name !== undefined) {
-                            map[name] = value;
-                        }
-                    }
-                }
-            });
-            return map;
-        };
-
-        $.fn.loadImage = function (src, cb) {
-            return $(this).each(function () {
-                var image_container = $(this),
-                    containerContent = image_container.html();
-                image_container.empty().fadeIn('slow').addClass('image_loading');
-                var img = new Image();
-                $(img).load(
-                    function () {
-                        $(this).css('display', 'none');
-                        image_container.removeClass('image_loading').empty().append(this);
-                        $(this).fadeIn('slow', function () {
-                            cb && _.isFunction(cb) && cb();
-                        });
-                    }).error(
-                    function () {
-                        //console.log('Error dey oo');
-                        image_container.removeClass('image_loading').empty().append(containerContent);
-                    }).attr('src', src + '?' + (new Date()).getTime());
-            });
-        };
-        $.fn.showMe = function (cb) {
-            cb && cb();
-            return $(this).each(function () {
-                $(this).removeClass('hide');
-
-            });
-        };
-        $.fn.hideMe = function (cb) {
-            cb && cb();
-            return $(this).each(function () {
-                $(this).addClass('hide');
-
-            });
-        };
-        $.fn.xhange = function (context) {
-            return $(this).change(
+    $.fn.loadImage = function (src, cb) {
+        return $(this).each(function () {
+            var image_container = $(this),
+                containerContent = image_container.html();
+            image_container.empty().fadeIn('slow').addClass('image_loading');
+            var img = new Image();
+            $(img).load(
                 function () {
-                    var sel = $(this).val();
-                    var name = $(this).attr('name');
-                    context.model && context.model.set(name, sel);
-                }
-            )
-        };
-        $.fn.clear = function (removeTip) {
-
-            return $(this).each(function () {
-                $(this).find('[type=file], [type=text], [type=password], [type=hidden], select, textarea, .slick-select')
-                    .each(function () {
-                        var input = $(this);
-                        if (!input.is('.slick-select')) {
-                            input.val('');
-                            if (input.is('[data-validation]')) {
-                                removeTip && removeTip(input);
-                                input.change && input.change();
-                            }
-                        } else {
-                            input.find("li[data-value='']").click();
-                        }
-
+                    $(this).css('display', 'none');
+                    image_container.removeClass('image_loading').empty().append(this);
+                    $(this).fadeIn('slow', function () {
+                        cb && _.isFunction(cb) && cb();
                     });
-            })
-        };
+                }).error(
+                function () {
+                    //console.log('Error dey oo');
+                    image_container.removeClass('image_loading').empty().append(containerContent);
+                }).attr('src', src + '?' + (new Date()).getTime());
+        });
+    };
+    $.fn.showMe = function (cb) {
+        cb && cb();
+        return $(this).each(function () {
+            $(this).removeClass('hide');
 
-        $.fn.swapWith = function (tag) {
-            return this.each(function () {
-                var elm = $(this),
-                    new_elm = null;
-                switch (tag.toLowerCase()) {
-                    case 'select':
-                        new_elm = $('<select></select>');
-                        break;
-                    case 'text':
-                        new_elm = $('<input type="text"/>');
-                        break;
-                    case 'password':
-                        new_elm = $('<input type="password"/>');
-                        break;
-                    case 'textarea':
-                        new_elm = $('<textarea></textarea>');
-                        break;
-                }
-                elm.hide(function () {
-                    new_elm.attr('name', elm.attr('name')).attr('class', elm.attr('class')).attr('id', elm.attr('id')).attr('value', elm.attr('value'));
-                    elm = elm.replaceWith(new_elm);
-                })
-            });
-        };
-        $.fn.swapClass = function (c1, c2) {
-            return this.each(function () {
-                if ($(this).is('.' + c1)) {
-                    $(this).removeClass(c1).addClass(c2);
-                } else {
-                    $(this).removeClass(c2).addClass(c1);
-                }
-            });
-        };
-        $.fn.slickIntegral = function () {
-            return this.each(function () {
-                var dis = $(this),
-                    _name = dis.data('name'),
-                    _min_value = parseInt(dis.data('min-value') || '0');
+        });
+    };
+    $.fn.hideMe = function (cb) {
+        cb && cb();
+        return $(this).each(function () {
+            $(this).addClass('hide');
 
-                //dis.html("<div class='operators'><a href='#' class='minus' title='Reduce value'><i class='icon-minus'></i></a><a  href='#' class='plus' title='Increase value'><i class='icon-plus'></i></a></div><input type='text' class='numeral " + _name + "' name='" + _name + "' value='" + _value + "' />");
-                var numeral = dis.find('.numeral'),
-                    plus = dis.find('.plus'),
-                    minus = dis.find('.minus'),
-                    val = numeral.val();
-                if (parseInt(val) < _min_value) {
-                    numeral.val(_min_value);
-                }
+        });
+    };
+    $.fn.xhange = function (context) {
+        return $(this).change(
+            function () {
+                var sel = $(this).val();
+                var name = $(this).attr('name');
+                context.model && context.model.set(name, sel);
+            }
+        )
+    };
+    $.fn.clear = function (removeTip) {
 
-                numeral.off().on('keyup', function (e) {
-                    var val = $(this).val();
-                    if (!_.isInteger(val)) {
-                        numeral.css('border', '1px solid red!important');
-                        numeral.focus().click();
-                    } else {
-                        var val = parseInt(val);
-                        if (val < _min_value) {
-                            numeral.val(_min_value);
+        return $(this).each(function () {
+            $(this).find('[type=file], [type=text], [type=password], [type=hidden], select, textarea, .slick-select')
+                .each(function () {
+                    var input = $(this);
+                    if (!input.is('.slick-select')) {
+                        input.val('');
+                        if (input.is('[data-validation]')) {
+                            removeTip && removeTip(input);
+                            input.change && input.change();
                         }
-                        numeral.css('border', '1px solid #ccc!important').change();
-
-                        //mdl && mdl.set(_name,val).save(function(){
-                        //    numeral.focus().click();
-                        //});
+                    } else {
+                        input.find("li[data-value='']").click();
                     }
+
                 });
-                minus.off().on('click', function (e) {
-                    e.preventDefault();
-                    var val = parseInt(numeral.val() || '0') - 1;
+        })
+    };
+
+    $.fn.swapWith = function (tag) {
+        return this.each(function () {
+            var elm = $(this),
+                new_elm = null;
+            switch (tag.toLowerCase()) {
+                case 'select':
+                    new_elm = $('<select></select>');
+                    break;
+                case 'text':
+                    new_elm = $('<input type="text"/>');
+                    break;
+                case 'password':
+                    new_elm = $('<input type="password"/>');
+                    break;
+                case 'textarea':
+                    new_elm = $('<textarea></textarea>');
+                    break;
+            }
+            elm.hide(function () {
+                new_elm.attr('name', elm.attr('name')).attr('class', elm.attr('class')).attr('id', elm.attr('id')).attr('value', elm.attr('value'));
+                elm = elm.replaceWith(new_elm);
+            })
+        });
+    };
+    $.fn.swapClass = function (c1, c2) {
+        return this.each(function () {
+            if ($(this).is('.' + c1)) {
+                $(this).removeClass(c1).addClass(c2);
+            } else {
+                $(this).removeClass(c2).addClass(c1);
+            }
+        });
+    };
+    $.fn.slickIntegral = function () {
+        return this.each(function () {
+            var dis = $(this),
+            //_name = dis.data('name'),
+                _min_value = parseInt(dis.data('min-value') || '0');
+
+            //dis.html("<div class='operators'><a href='#' class='minus' title='Reduce value'><i class='icon-minus'></i></a><a  href='#' class='plus' title='Increase value'><i class='icon-plus'></i></a></div><input type='text' class='numeral " + _name + "' name='" + _name + "' value='" + _value + "' />");
+            var numeral = dis.find('.numeral'),
+                plus = dis.find('.plus'),
+                minus = dis.find('.minus'),
+                val = numeral.val();
+            if (parseInt(val) < _min_value) {
+                numeral.val(_min_value);
+            }
+
+            numeral.off().on('keyup', function (e) {
+                var val = $(this).val();
+                if (!_.isInteger(val)) {
+                    numeral.css('border', '1px solid red!important');
+                    numeral.focus().click();
+                } else {
+                    var val = parseInt(val);
                     if (val < _min_value) {
-                        val = _min_value;
+                        numeral.val(_min_value);
                     }
-                    numeral.val(val).change();
-                    //mdl && mdl.set(_name,val).save(function(){});
-                });
-                plus.off().on('click', function (e) {
-                    e.preventDefault();
-                    var val = parseInt(numeral.val()) + 1;
-                    numeral.val(val).change();
-                    //mdl && mdl.set(_name,val).save(function(){});
-                });
+                    numeral.css('border', '1px solid #ccc!important').change();
 
-            });
-        };
-
-        $.fn.hideIf = function (load) {
-
-            //console.log('Load: ',load);
-
-            return this.each(function () {
-
-                var dis = $(this),
-                    condition = dis.attr('data-hideif').split(':');
-                if (condition.length < 3) dis.remove();
-
-                var key = condition[0].trim(),
-                    opCode = condition[1].trim(),
-                    value = condition[2].trim(),
-                    result = false;
-
-                //console.log('If: ',key, opCode, value);
-
-                switch (opCode) {
-                    case '!!':
-                        result = (load[key]);
-                        break;
-                    case '=':
-                        result = (load[key] == value);
-                        break;
-                    case '!=':
-                        result = (load[key] != value);
-                        break;
-                    case '>':
-                        result = (Number(load[key]) > Number(value));
-                        break;
-                    case '>=':
-                        result = (Number(load[key]) >= Number(value));
-                        break;
-                    case '<':
-                        result = (Number(load[key]) < Number(value));
-                        break;
-                    case '<=':
-                        result = (Number(load[key]) <= Number(value));
-                        break;
                 }
-
-                //console.log('Result: ',result);
-                result && dis.remove();
-
             });
-        };
+            minus.off().on('click', function (e) {
+                e.preventDefault();
+                var val = parseInt(numeral.val() || '0') - 1;
+                if (val < _min_value) {
+                    val = _min_value;
+                }
+                numeral.val(val).change();
+            });
+            plus.off().on('click', function (e) {
+                e.preventDefault();
+                var val = parseInt(numeral.val()) + 1;
+                numeral.val(val).change();
+            });
 
+        });
+    };
 
-        root.SlicksExtended = true;
-        //console.log("Extended!");
-    }
+    $.fn.hideIf = function (load) {
+
+        //console.log('Load: ',load);
+
+        return this.each(function () {
+
+            var dis = $(this),
+                condition = dis.attr('data-hideif').split(':');
+            if (condition.length < 3) dis.remove();
+
+            var key = condition[0].trim(),
+                opCode = condition[1].trim(),
+                value = condition[2].trim(),
+                result = false;
+
+            //console.log('If: ',key, opCode, value);
+
+            switch (opCode) {
+                case '!!':
+                    result = (load[key]);
+                    break;
+                case '=':
+                    result = (load[key] == value);
+                    break;
+                case '!=':
+                    result = (load[key] != value);
+                    break;
+                case '>':
+                    result = (Number(load[key]) > Number(value));
+                    break;
+                case '>=':
+                    result = (Number(load[key]) >= Number(value));
+                    break;
+                case '<':
+                    result = (Number(load[key]) < Number(value));
+                    break;
+                case '<=':
+                    result = (Number(load[key]) <= Number(value));
+                    break;
+            }
+
+            //console.log('Result: ',result);
+            result && dis.remove();
+
+        });
+    };
 
 
     $('.data-connecting').hide();
 
+    /*!
+        Session Management
+     */
+
+    if (typeof  root.sessionStorage !== 'undefined') {
+
+        sessionStorage.clear();
+
+        root.Session = (function () {
+            if (!sessionStorage['heap']) {
+                sessionStorage.setItem('heap', JSON.stringify({}));
+            }
+
+            var changeListener = [];
+            return {
+                set: function (k, v) {
+                    var heap = JSON.parse(sessionStorage.getItem('heap'));
+                    heap[k] = v;
+                    sessionStorage.setItem('heap', JSON.stringify(heap));
+                },
+                unset: function (k) {
+
+                    var heap = JSON.parse(sessionStorage.getItem('heap'));
+                    delete heap[k];
+                    sessionStorage.setItem('heap', JSON.stringify(heap));
+                },
+                get: function (k) {
+                    var heap = JSON.parse(sessionStorage.getItem('heap'));
+                    return heap[k];
+                },
+                reset: function (appName) {
+                    sessionStorage.setItem('heap', JSON.stringify({}));
+                    this.appName(appName);
+                },
+                user: function (options) {
+                    if (options) {
+                        var me = JSON.parse(sessionStorage.getItem('_u53r_'));
+                        _.xtend(me, options);
+
+                        sessionStorage.setItem('_u53r_', JSON.stringify(me));
+
+                        _.each(changeListener, function () {
+                            this();
+                        });
+
+                    } else {
+                        return JSON.parse(sessionStorage.getItem('_u53r_'));
+                    }
+
+                },
+                appName: function (_appName) {
+                    if (_appName) {
+                        sessionStorage.setItem('_@ppN@m3_', _appName);
+                    } else {
+                        return sessionStorage.getItem('_@ppN@m3_');
+                    }
+                },
+                faker: function (_faker) {
+                    if (_faker) {
+                        sessionStorage.setItem('_f@k3r_', JSON.stringify(_faker));
+
+                    } else {
+                        return JSON.parse(sessionStorage.getItem('_f@k3r_'));
+
+                    }
+                },
+                unsetFaker: function () {
+
+                    sessionStorage.removeItem('_f@k3r_');
+                },
+                isAuthenticated: function () {
+
+                    return (this.user() && this.user().domain) && (this.user().domain === this.appName());
+
+                },
+                cans: function () {
+                    var Robaac = this.user() ? _.robaac(this.user().roles) : null;
+                    return Robaac && Robaac.cans(this.user().role);
+                },
+                has: function (action) {
+                    var Robaac = this.user() ? _.robaac(this.user().roles) : null;
+                    return Robaac && Robaac.has(this.user().role, action);
+                },
+                can: function (action, param) {
+
+                    var Robaac = this.user() ? _.robaac(this.user().roles) : null;
+                    return Robaac && ( param ? Robaac.can(this.user().role, action, param) : Robaac.has(this.user().role, action));
+                },
+                enforcePermissions: function (context, $el) {
+
+                    var permits = [],
+                        _data = context.model ? context.model.toObject() : {},
+                        role = this.user() ? this.user().role : null,
+                        roles = this.user() ? this.user().roles : null,
+                        Robaac = roles ? _.robaac(roles) : null;
+
+
+                    if (Robaac && roles && role) {
+                        _.each(roles[role].can, function (i, operation) {
+
+                            operation = _.isString(operation) ? operation : operation.name;
+
+                            Robaac.can(role, operation, _data, function (r) {
+
+                                r && permits.push('.rbk-' + operation);
+                            });
+                        });
+
+                        //console.log('Permits: ', permits.join(','));
+
+                        $el.find('[class*=rbk-]').not(permits.join(',')).remove();
+                    }
+
+
+                },
+                inRole: function (role) {
+                    return (this.user() && (this.user().role === role)) ? true : false;
+                },
+
+                login: function (user, _appName) {
+
+                    this.appName(_appName);
+
+                    user.domain = _appName;
+
+                    sessionStorage.setItem('_u53r_', JSON.stringify(user));
+
+                    this.unsetFaker();
+
+                    this.begin();
+                },
+                begin: function () {
+
+                    var wait = 10,
+                        self = this,
+                        timer,
+                        get_out = function () {
+
+                            clearTimeout(timer);
+                            self.logout();
+                            //Router.dispatch('#/logout');
+                        },
+                        resetTimer = function (e) {
+                            clearTimeout(timer);
+                            timer = setTimeout(get_out, 60000 * wait);
+                        };
+                    root.document.onkeypress = resetTimer;
+                    root.document.onmousemove = resetTimer;
+                },
+                onChange: function (cb) {
+                    changeListener.push(cb);
+                },
+                logout: function (cb) {
+                    var appName = sessionStorage.getItem('_@ppN@m3_');
+
+                    sessionStorage.clear();
+                    this.reset(appName);
+
+                    if (cb) {
+                        cb()
+                    } else {
+                        Router.dispatch('#/');
+                        location.hash = '#/';
+                    }
+
+                }
+            };
+        })();
+
+        $(root).on('hashchange', function () {
+            $(this).scrollTop(0);
+        });
+    }
+
+
+    /*!
+        Slick Object
+     */
     var Slicks = {
         cleanUps: {},
         cometListeners: {},
         onCometsNotify: function (listener) {
-            //console.log('Adding Listener: ', listener.listenerID);
+
             Slicks.cometListeners[listener.listenerID] = listener;
         },
         stopCometsOn: function (listener) {
-            //console.log('Removing Listener: ', listener.listenerID);
-            //console.log('Listener: ', Slicks.cometListeners[listener.listenerID]);
 
             delete Slicks.cometListeners[listener.listenerID];
         },
         onComets: function (comets) {
-            //console.log('Comets: ', comets);
-            //console.log('Comets: ', Slicks.cometListeners);
 
             _.each(Slicks.cometListeners, function (k, v) {
-                //console.log("k:%s, v:%s", k, v);
 
                 v.onComets.call(v, comets);
+
             });
 
         },
@@ -868,7 +1042,7 @@
                 contentType: 'application/x-www-form-urlencoded',
                 beforeSend: function (xhr) {
                     $('.data-connecting').show();
-                    //Session && Session.isAuthenticated() && xhr.setRequestHeader('x-csrf-token', Session.user().token || '');
+                    Session && Session.isAuthenticated() && xhr.setRequestHeader('x-csrf-token', Session.user().token || '');
                 },
                 url: url,
                 data: data,
@@ -916,6 +1090,9 @@
     };
 
 
+    /*!
+        Extending Slicks sync when IO is available.
+     */
     if (io) {
         var socket = io.connect();
 
@@ -940,11 +1117,6 @@
         });
 
         socket.on('comets', Slicks.onComets);
-        //socket.on('comets', function(comets){
-        //    console.log('Comets: ', comets);
-        //
-        //
-        //});
 
 
     } else {
@@ -1010,14 +1182,14 @@
 
             switch (len) {
                 case 3:
-                    if (typeof cb !== 'function') {
+                    if (!_.isFunction(cb)) {
                         throw Error("Invalid arguments error; expecting a function but found a " + typeof cb);
                     }
                     break;
                 case 2:
                     cb = params;
 
-                    if (typeof cb !== 'function') {
+                    if (!_.isFunction(cb)) {
                         throw Error("Invalid arguments error; expecting a function but found a " + typeof cb);
                     }
                     params = false;
@@ -1025,7 +1197,7 @@
                 case 1:
                     cb = url;
 
-                    if (typeof cb !== 'function') {
+                    if (!_.isFunction(cb)) {
                         throw Error("Invalid arguments error; expecting a function but found a " + typeof cb);
                     }
                     params = false;
@@ -1036,6 +1208,7 @@
             var attr = params || this.toObject(),
                 mdl = Model((url || this.url), attr);
             mdl.query = attr;
+
             return {
                 model: mdl,
                 callback: cb
@@ -1273,6 +1446,7 @@
             root.history.back();
         };
         return Path;
+
     }());
 
     var fireEvents = function (evt, data) {
@@ -1324,18 +1498,11 @@
                     switch (comet.verb) {
 
                         case 'update':
-//                                    console.log('updated: ' + JSON.stringify(comet.data));
                             if (comet.data.id && self.model.get('id') == comet.data.id) {
 
-                                //for (var k in comet.data) {
-                                //    if (k !== 'id') {
-                                //        self.model.set(k, comet.data[k]);
-                                //    }
-                                //}
                                 delete comet.data.id;
                                 self.model.set(comet.data).fire('change');
 
-                                //self.model.fire('change');
                             }
 
                             break;
@@ -1499,7 +1666,10 @@
                 },
                 reset: function () {
                     //    attributes = {};
-                    for (var k in attributes) delete attributes[k];
+                    //for (var k in attributes) delete attributes[k];
+                    _.each(attributes, function (k, v) {
+                        delete attributes[k];
+                    });
 
                     fireEvents.call(modelEvents, 'change', this);
                     return this;
@@ -1508,8 +1678,8 @@
 
                     if (event && event.indexOf(',') != -1) {
                         var evts = event.split(',');
-                        _.each(evts, function () {
-                            _.attachEvent.call(modelEvents, $.trim(this), handler, context);
+                        _.each(evts, function (i, evt) {
+                            _.attachEvent.call(modelEvents, $.trim(evt), handler, context);
                         });
 
                     } else {
@@ -1522,8 +1692,8 @@
                         if (event.indexOf(',') != -1) {
                             var evts = event.split(',');
 
-                            _.each(evts, function () {
-                                _.detachEvent.call(modelEvents, (this).trim());
+                            _.each(evts, function (i, evt) {
+                                _.detachEvent.call(modelEvents, (evt).trim());
                             });
                         } else {
                             _.detachEvent.call(modelEvents, event.trim());
@@ -1535,7 +1705,7 @@
                     return this;
                 },
                 sync: Slicks.sync
-            };
+            };``
 
 
         return _.inherits(modelProto, {
@@ -1596,6 +1766,7 @@
                     _koll.length = 0;
 
                     for (var k = 0; k < mdls.length; ++k) {
+
                         var mdl = Model(_url, mdls[k], _transport);
                         mdl.on('destroy', _koll.remove, _koll);
                         mdl.on('change', model_changed, _koll);
@@ -1630,6 +1801,7 @@
                 models.add(this, mdl);
             },
             collectionChanged = function (type) {
+
                 for (var i = 0; i < changeEventListeners.length; ++i) {
                     changeEventListeners[i] && changeEventListeners[i]['notifyChange'].call(changeEventListeners[i], this, type);
                 }
@@ -1652,37 +1824,20 @@
                     }
                     switch (comet.verb) {
                         case 'create':
-//                                    console.log('created: ' + JSON.stringify(comet.data));
                             self.add(comet.data);
                             break;
                         case 'update':
-//                                    console.log('updated: ' + JSON.stringify(comet.data));
                             if (comet.data.id) {
-                                var m = self.get(comet.data.id);
-                                for (var k in comet.data) {
-                                    if (k !== 'id') {
-                                        m.set(k, comet.data[k]);
-                                    }
-                                }
-                                m.fire('change');
-                            } else if (comet.data.ids) {
-                                var aids = comet.data.ids.split(',');
-                                delete comet.data.ids;
 
-                                _.each(aids, function () {
-                                    var m = self.get(this.trim());
-                                    for (var k in comet.data) {
-                                        if (k !== 'id') {
-                                            m.set(k, comet.data[k]);
-                                        }
-                                    }
-                                    m.fire('change');
-                                });
+                                var m = self.get(comet.data.id);
+                                delete comet.data.id;
+
+                               m &&  m.set(comet.data).fire('change');
+
                             }
 
                             break;
                         case 'destroy':
-//                                    console.log('destroyed: ' + JSON.stringify(comet.data));
                             var tobe_removed = self.get(comet.data.id);
                             tobe_removed && tobe_removed.fire('destroy');
                             break;
@@ -1731,8 +1886,8 @@
                     return this;
                 },
                 each: function (cb) {
-                    _.each(models.list, function () {
-                        this && cb && cb(this);
+                    _.each(models.list, function (i, model) {
+                        this && cb && cb(model);
                     });
                 },
                 on: function (event, handler, context) {
@@ -1740,8 +1895,8 @@
                     if (event && event.indexOf(',') != -1) {
                         var evts = event.split(',');
 
-                        _.each(evts, function () {
-                            _.attachEvent.call(collectionEvents, $.trim(this), handler, context);
+                        _.each(evts, function (i, evt) {
+                            _.attachEvent.call(collectionEvents, $.trim(evt), handler, context);
                         });
                     } else {
                         _.attachEvent.call(collectionEvents, event.trim(), handler, context);
@@ -1754,8 +1909,8 @@
                         if (event.indexOf(',') != -1) {
                             var evts = event.split(',');
 
-                            _.each(evts, function () {
-                                _.detachEvent.call(collectionEvents, (this).trim());
+                            _.each(evts, function (i, evt) {
+                                _.detachEvent.call(collectionEvents, (evt).trim());
                             });
                         } else {
                             _.detachEvent.call(collectionEvents, event.trim());
@@ -1784,8 +1939,8 @@
                 },
                 toJSON: function () {
 
-                    return _.map(models.list, function (i) {
-                        return this.toJSON();
+                    return _.map(models.list, function (i, model) {
+                        return model.toJSON();
                     });
                 },
                 populate: function (mdls, url) {
@@ -1802,23 +1957,24 @@
     var View = function (options) {
 
         var bindViewEvents = function () {
-                var self = this;
-                for (var k in self.events) {
-                    var handler = self.events[k];
-                    var triggers = k.split(',');
-                    _.each(triggers, function () {
-                        var trigger = this,
-                            event_targets = trigger && trigger.split(':');
-                        var evt = event_targets[0];
-                        var dom = event_targets[1];
-                        evt = evt && $.trim(evt);
-                        dom = dom && $.trim(dom);
-                        self.$el.find(dom).unbind();
-                        self[handler] && self.$el.on(evt, dom, $.proxy(self, handler));
-                    });
+            var self = this;
+            for (var k in self.events) {
+                var handler = self.events[k];
+                var triggers = k.split(',');
+                _.each(triggers, function () {
+                    var trigger = this,
+                        event_targets = trigger && trigger.split(':');
+                    var evt = event_targets[0];
+                    var dom = event_targets[1];
+                    evt = evt && $.trim(evt);
+                    dom = dom && $.trim(dom);
+                    self.$el.find(dom).unbind();
+                    self.$el.find(dom).length && self[handler] && self.$el.on(evt, dom, $.proxy(self, handler));
 
-                }
-            },
+                });
+
+            }
+        },
             applySteps = function () {
 
 
@@ -2084,6 +2240,8 @@
                             validations = validations.split('|');
 
                         for (var i = 0; i < validations.length; ++i) {
+
+
                             var validation = validations[i],
                                 type_details = validation.split(':'),
                                 value = type_details[0].trim();
@@ -2158,7 +2316,8 @@
                             if (error_found) {
                                 break;
                             }
-                        }
+
+                        }//end
 
                     });
                     return !has_error;
@@ -2472,194 +2631,6 @@
 
     };
 
-
-    root.Keys = {
-        Enter: 13,
-        Shift: 16,
-        Tab: 9,
-        Escape: 27,
-        LeftArrow: 37
-    };
-
-    for (var i in Keys) {
-        Keys['is' + i] = (function (compare) {
-            return function (e) {
-                return (e.keyCode || e.which) === compare;
-
-            };
-        })(Keys[i]);
-    }
-
-    if (typeof  root.sessionStorage !== 'undefined'){
-
-        sessionStorage.clear();
-
-        root.Session = (function () {
-            if (!sessionStorage['heap']) {
-                sessionStorage.setItem('heap', JSON.stringify({}));
-            }
-
-            var changeListener = [];
-            return {
-                set: function (k, v) {
-                    var heap = JSON.parse(sessionStorage.getItem('heap'));
-                    heap[k] = v;
-                    sessionStorage.setItem('heap', JSON.stringify(heap));
-                },
-                unset: function (k) {
-
-                    var heap = JSON.parse(sessionStorage.getItem('heap'));
-                    delete heap[k];
-                    sessionStorage.setItem('heap', JSON.stringify(heap));
-                },
-                get: function (k) {
-                    var heap = JSON.parse(sessionStorage.getItem('heap'));
-                    return heap[k];
-                },
-                reset: function (appName) {
-                    sessionStorage.setItem('heap', JSON.stringify({}));
-                    this.appName(appName);
-                },
-                user: function (options) {
-                    if (options) {
-                        var me = JSON.parse(sessionStorage.getItem('_u53r_'));
-                        _.xtend(me, options);
-
-                        sessionStorage.setItem('_u53r_', JSON.stringify(me));
-
-                        _.each(changeListener, function () {
-                            this();
-                        });
-
-                    } else {
-                        return JSON.parse(sessionStorage.getItem('_u53r_'));
-                    }
-
-                },
-                appName: function (_appName) {
-                    if (_appName) {
-                        sessionStorage.setItem('_@ppN@m3_', _appName);
-                    } else {
-                        return sessionStorage.getItem('_@ppN@m3_');
-                    }
-                },
-                faker: function (_faker) {
-                    if (_faker) {
-                        sessionStorage.setItem('_f@k3r_', JSON.stringify(_faker));
-
-                    } else {
-                        return JSON.parse(sessionStorage.getItem('_f@k3r_'));
-
-                    }
-                },
-                unsetFaker: function () {
-
-                    sessionStorage.removeItem('_f@k3r_');
-                },
-                isAuthenticated: function () {
-
-                    return (this.user() && this.user().domain) && (this.user().domain === this.appName());
-
-                },
-                cans:function(){
-                    var Robaac = this.user()? _.robaac(this.user().roles) : null;
-                    return Robaac &&  Robaac.cans(this.user().role);
-                },
-                has:function(action){
-                    var Robaac = this.user()? _.robaac(this.user().roles) : null;
-                    return Robaac &&  Robaac.has(this.user().role, action);
-                },
-                can: function (action, param) {
-
-                    var Robaac = this.user()? _.robaac(this.user().roles) : null;
-                    return Robaac && ( param ? Robaac.can(this.user().role, action, param) : Robaac.has(this.user().role, action));
-                },
-                enforcePermissions:function(context, $el){
-
-                    var permits = [],
-                        _data = context.model? context.model.toObject() : {},
-                        role = this.user()? this.user().role : null,
-                        roles = this.user()? this.user().roles: null,
-                        Robaac = roles? _.robaac(roles) : null;
-
-
-
-                    if(Robaac && roles && role){
-                        _.each(roles[role].can, function (i,v) {
-
-                            v = (typeof v  === 'string')? v : v.name;
-
-                            Robaac.can(role, v, _data, function(r){
-
-                                r && permits.push('.rbk-' + v);
-                            });
-                        });
-
-                        //console.log('Permits: ', permits.join(','));
-
-                        $el.find('[class*=rbk-]').not(permits.join(',')).remove();
-                    }
-
-
-                },
-                inRole: function (role) {
-                    return (this.user() && (this.user().role === role))? true: false;
-                },
-
-                login: function (user, _appName) {
-
-                    this.appName(_appName);
-
-                    user.domain = _appName;
-
-                    sessionStorage.setItem('_u53r_', JSON.stringify(user));
-
-                    this.unsetFaker();
-
-                    this.begin();
-                },
-                begin: function () {
-
-                    var wait = 10,
-                        self = this,
-                        timer,
-                        get_out = function () {
-
-                            clearTimeout(timer);
-                            self.logout();
-                            //Router.dispatch('#/logout');
-                        },
-                        resetTimer = function (e) {
-                            clearTimeout(timer);
-                            timer = setTimeout(get_out, 60000 * wait);
-                        };
-                    root.document.onkeypress = resetTimer;
-                    root.document.onmousemove = resetTimer;
-                },
-                onChange: function (cb) {
-                    changeListener.push(cb);
-                },
-                logout: function (cb) {
-                    var appName = sessionStorage.getItem('_@ppN@m3_');
-
-                    sessionStorage.clear();
-                    this.reset(appName);
-
-                    if (cb) {
-                        cb()
-                    } else {
-                        Router.dispatch('#/');
-                        location.hash = '#/';
-                    }
-
-                }
-            };
-        })();
-
-        $(root).on('hashchange', function () {
-            $(this).scrollTop(0);
-        });
-    }
 
     _.xtend(Slicks, {
         '$': $,
