@@ -566,24 +566,6 @@
 
     }());
 
-    root.Keys = {
-        Enter: 13,
-        Shift: 16,
-        Tab: 9,
-        Escape: 27,
-        LeftArrow: 37
-    };
-
-    _.each(Keys, function (i, v) {
-
-        Keys['is' + i] = (function (compare) {
-            return function (e) {
-                return (e.keyCode || e.which) === compare;
-
-            };
-        })(v);
-
-    });
 
 
     /*!
@@ -840,143 +822,183 @@
      Session Management
      */
 
-    if ((typeof  root.sessionStorage !== 'undefined') && !root.Session) {
+    if (typeof root.Session === 'undefined' || !root.Session) {
 
-        sessionStorage.clear();
+        root.Keys = {
+            Enter: 13,
+            Shift: 16,
+            Tab: 9,
+            Escape: 27,
+            LeftArrow: 37
+        };
+        for (var i in Keys) {
+            Keys['is' + i] = (function (compare) {
+                return function (e) {
+                    return (e.keyCode || e.which) === compare;
+
+                };
+            })(Keys[i]);
+        }
 
         root.Session = (function () {
-            //if (!sessionStorage['heap']) {
-            //    sessionStorage.setItem('heap', JSON.stringify({}));
-            //}
+            if (!$3$$10N['heap']) {
+                $3$$10N['heap'] = {};
+            }
 
             var changeListener = [];
             return {
                 set: function (k, v) {
-                    var heap = JSON.parse(sessionStorage.getItem('heap')) || {};
-                    heap[k] = v;
-                    sessionStorage.setItem('heap', JSON.stringify(heap));
+                    $3$$10N['heap'][k] = v;
                 },
                 unset: function (k) {
-
-                    var heap = JSON.parse(sessionStorage.getItem('heap')) || {};
-                    delete heap[k];
-                    sessionStorage.setItem('heap', JSON.stringify(heap));
+                    delete $3$$10N['heap'][k];
                 },
                 get: function (k) {
-                    var heap = JSON.parse(sessionStorage.getItem('heap')) || {};
-                    return heap[k];
+                    return $3$$10N['heap'][k];
                 },
-                reset: function (appName) {
-                    sessionStorage.setItem('heap', JSON.stringify({}));
-                    this.appName(appName);
+                reset: function () {
+                    $3$$10N['heap'] = {};
                 },
                 user: function (options) {
                     if (options) {
-                        var me = JSON.parse(sessionStorage.getItem('_u53r_'));
+                        var me = $3$$10N['_u53r_'];
                         _.xtend(me, options);
 
-                        sessionStorage.setItem('_u53r_', JSON.stringify(me));
+                        $3$$10N['_u53r_'] = me;
 
                         _.each(changeListener, function () {
                             this();
                         });
 
                     } else {
-                        return JSON.parse(sessionStorage.getItem('_u53r_'));
+                        return $3$$10N['_u53r_'];
                     }
 
                 },
                 appName: function (_appName) {
                     if (_appName) {
-                        sessionStorage.setItem('_@ppN@m3_', _appName);
+                        $3$$10N['_@ppN@m3_'] = _appName;
                     } else {
-                        return sessionStorage.getItem('_@ppN@m3_');
+                        return $3$$10N['_@ppN@m3_'];
                     }
                 },
                 faker: function (_faker) {
                     if (_faker) {
-                        sessionStorage.setItem('_f@k3r_', JSON.stringify(_faker));
-
+                        $3$$10N['_f@k3r_'] = _faker;
                     } else {
-                        return JSON.parse(sessionStorage.getItem('_f@k3r_'));
-
+                        return $3$$10N['_f@k3r_'];
                     }
                 },
                 unsetFaker: function () {
 
-                    sessionStorage.removeItem('_f@k3r_');
+                    delete $3$$10N['_f@k3r_'];
                 },
                 isAuthenticated: function () {
 
                     return (this.user() && this.user().domain) && (this.user().domain === this.appName());
 
                 },
-                cans: function () {
-                    var Robaac = this.user() ? _.robaac(this.user().roles) : null;
-                    return Robaac && Robaac.cans(this.user().role);
+                cans:function(){
+                    var Robaac = this.user()? _.robaac(this.user().roles) : null;
+                    return Robaac &&  Robaac.cans(this.user().role);
                 },
-                has: function (action) {
-                    var Robaac = this.user() ? _.robaac(this.user().roles) : null;
-                    return Robaac && Robaac.has(this.user().role, action);
+                has:function(action){
+                    var Robaac = this.user()? _.robaac(this.user().roles) : null;
+                    return Robaac &&  Robaac.has(this.user().role, action);
                 },
                 can: function (action, param) {
+                    //console.log('ROLE: ', this.roles());
 
-                    var Robaac = this.user() ? _.robaac(this.user().roles) : null;
+                    var Robaac = this.user()? _.robaac(this.user().roles) : null;
                     return Robaac && ( param ? Robaac.can(this.user().role, action, param) : Robaac.has(this.user().role, action));
                 },
-                enforcePermissions: function (context, $el) {
+                enforcePermissions:function(context, $el){
+
+
 
                     var permits = [],
-                        _data = context.model ? context.model.toObject() : {},
-                        role = this.user() ? this.user().role : null,
-                        roles = this.user() ? this.user().roles : null,
-                        Robaac = roles ? _.robaac(roles) : null;
+                        _data = context.model? context.model.toObject() : {},
+                        role = this.user()? this.user().role : null,
+                        roles = this.user()? this.user().roles: null,
+                        Robaac = roles? _.robaac(roles) : null;
 
 
-                    if (Robaac && roles && role) {
-                        _.each(roles[role].can, function (i, operation) {
+                    //console.log('PARAM1: ', _data);
 
-                            operation = _.isString(operation) ? operation : operation.name;
+                    if(Robaac && roles && role){
+                        _.each(roles[role].can, function (i,v) {
 
-                            Robaac.can(role, operation, _data, function (r) {
+                            v = (typeof v  === 'string')? v : v.name;
 
-                                r && permits.push('.rbk-' + operation);
+                            //if (Robaac.can(role, v, _data, function(r){})) {
+                            //    permits.push('.rbk-' + v);
+                            //}
+                            Robaac.can(role, v, _data, function(r){
+
+                                //console.log('Can: %s = %s', v, r );
+
+                                r && permits.push('.rbk-' + v);
                             });
                         });
 
                         //console.log('Permits: ', permits.join(','));
 
+                        //permits.length && $el.find('[class*=rbk-]').not(permits.join(',')).remove();
                         $el.find('[class*=rbk-]').not(permits.join(',')).remove();
                     }
 
 
+                    //permits = Robaac ? Robaac.permissions(this.user().role) : '';
+
+                    //console.log('Permissions: ', permits);
+
+                    //permits && $el.find('[class*=rbk-]').not(permits).remove();
                 },
                 inRole: function (role) {
-                    return (this.user() && (this.user().role === role)) ? true : false;
+                    //return (this.user() && ($.inArray(role, this.user().roles) > -1));
+                    return (this.user() && (this.user().role === role))? true: false;
                 },
 
+                //login: function (user, _appName) {
+                //    this.appName(_appName);
+                //    user.domain = _appName;
+                //    $3$$10N['_u53r_'] = user;
+                //    this.unsetFaker();
+                //    // SlickCart.init();
+                //    this.begin();
+                //},
+                //roles:function(roles){
+                //    if(roles){
+                //        $3$$10N['_r0l35_'] = roles;
+                //    }
+                //    else{
+                //        return  $3$$10N['_r0l35_'];
+                //    }
+                //},
                 login: function (user, _appName) {
-
                     this.appName(_appName);
-
                     user.domain = _appName;
 
-                    sessionStorage.setItem('_u53r_', JSON.stringify(user));
+                    //console.log('ROLE: ', user.roles);
+                    //console.log(user);
+                    //var roles = {};
+                    //_.xtend(roles, user.roles);
+                    //delete user.roles;
 
+                    $3$$10N['_u53r_'] = user;
+                    //this.roles(roles);
                     this.unsetFaker();
 
+                    //this.Robaac = _.robaac(roles);
+                    //console.log('Permissions: ', this.Robaac.permissions(user.role));
                     this.begin();
                 },
                 begin: function () {
-
                     var wait = 10,
                         self = this,
-                        timer,
-                        get_out = function () {
-
+                        timer, get_out = function () {
                             clearTimeout(timer);
-                            self.logout();
-                            //Router.dispatch('#/logout');
+                            Router.dispatch('#/logout');
                         },
                         resetTimer = function (e) {
                             clearTimeout(timer);
@@ -989,11 +1011,11 @@
                     changeListener.push(cb);
                 },
                 logout: function (cb) {
-                    var appName = sessionStorage.getItem('_@ppN@m3_');
+                    var appName = $3$$10N['_@ppN@m3_']; //for
 
-                    sessionStorage.clear();
-                    this.reset(appName);
-
+                    $3$$10N.$.clearMem();
+                    $3$$10N['_@ppN@m3_'] = appName;
+                    this.reset();
                     if (cb) {
                         cb()
                     } else {
@@ -1009,7 +1031,6 @@
             $(this).scrollTop(0);
         });
     }
-
 
     /*!
      Slick Object
@@ -1096,6 +1117,7 @@
         var socket = io.connect();
 
         socket.on('connect', function () {
+
             console.log('Connected to server...');
 
             Slicks.sync = function (url, method, data, cb) {
@@ -2174,7 +2196,12 @@
 
                     _.template.call(this, function (str) {
 
-                        str && this.$el.off().html($(str).html());
+
+                        if(str){
+                            str = $(str);
+                            Session.enforcePermissions(this, str);
+                            this.$el.off().html(str.html());
+                        }
                         (this.class && this.$el.attr('class', this.class));
                         (this.id && this.$el.attr('id', this.id));
 
