@@ -35,7 +35,7 @@
     }
 
     /*!
-        Extending JavaScript
+     Extending JavaScript
      */
 
     if (typeof Array.prototype.indexOf == 'undefined') {
@@ -72,7 +72,7 @@
     }
 
     /*!
-        Utilities
+     Utilities
      */
 
     var _ = (function () {
@@ -586,7 +586,6 @@
     });
 
 
-
     /*!
      Extending JQuery, these are plugins
      */
@@ -838,7 +837,7 @@
     $('.data-connecting').hide();
 
     /*!
-        Session Management
+     Session Management
      */
 
     if (typeof  root.sessionStorage !== 'undefined') {
@@ -1013,7 +1012,7 @@
 
 
     /*!
-        Slick Object
+     Slick Object
      */
     var Slicks = {
         cleanUps: {},
@@ -1091,7 +1090,7 @@
 
 
     /*!
-        Extending Slicks sync when IO is available.
+     Extending Slicks sync when IO is available.
      */
     if (io) {
         var socket = io.connect();
@@ -1475,6 +1474,12 @@
 
     var Model = function (url, attribs) {
 
+        if (typeof url !== 'undefined' && !_.isString(url)) {
+            attribs = url;
+            url = "";
+        }
+
+
         var modelEvents = {},
             dirty_attributes = {},
             attributes = attribs || {},
@@ -1705,7 +1710,7 @@
                     return this;
                 },
                 sync: Slicks.sync
-            };``
+            };
 
 
         return _.inherits(modelProto, {
@@ -1832,7 +1837,7 @@
                                 var m = self.get(comet.data.id);
                                 delete comet.data.id;
 
-                               m &&  m.set(comet.data).fire('change');
+                                m && m.set(comet.data).fire('change');
 
                             }
 
@@ -1957,24 +1962,24 @@
     var View = function (options) {
 
         var bindViewEvents = function () {
-            var self = this;
-            for (var k in self.events) {
-                var handler = self.events[k];
-                var triggers = k.split(',');
-                _.each(triggers, function () {
-                    var trigger = this,
-                        event_targets = trigger && trigger.split(':');
-                    var evt = event_targets[0];
-                    var dom = event_targets[1];
-                    evt = evt && $.trim(evt);
-                    dom = dom && $.trim(dom);
-                    self.$el.find(dom).unbind();
-                    self.$el.find(dom).length && self[handler] && self.$el.on(evt, dom, $.proxy(self, handler));
+                var self = this;
+                for (var k in self.events) {
+                    var handler = self.events[k];
+                    var triggers = k.split(',');
+                    _.each(triggers, function () {
+                        var trigger = this,
+                            event_targets = trigger && trigger.split(':');
+                        var evt = event_targets[0];
+                        var dom = event_targets[1];
+                        evt = evt && $.trim(evt);
+                        dom = dom && $.trim(dom);
+                        self.$el.find(dom).unbind();
+                        self.$el.find(dom).length && self[handler] && self.$el.on(evt, dom, $.proxy(self, handler));
 
-                });
+                    });
 
-            }
-        },
+                }
+            },
             applySteps = function () {
 
 

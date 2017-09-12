@@ -6,6 +6,7 @@ var Collection = null,
     Model = null,
     View = null,
     userModel = null,
+    modelFromAttributes = null,
     users = null,
     expect = require('chai').expect,
     should = require('chai').should(),
@@ -78,13 +79,29 @@ describe('#Slicks ', function () {
                 Collection = Slicks.Collection;
                 Model = Slicks.Model;
                 userModel = Model('/users', {name: 'steve', age: 25});
-
+                modelFromAttributes = Model({name: 'steve', age: 25});
                 done();
             });
     });
 
 
     describe('@Model', function () {
+
+        describe(' >url and attributes', function () {
+
+            it('Expects url return ""', function () {
+
+                modelFromAttributes.url.should.equal('');
+            });
+
+            it('Expects get name should return  steve', function () {
+                modelFromAttributes.get('name').should.equal('steve');
+            });
+            it('Expects getInt age should return 25', function () {
+                modelFromAttributes.getInt('age').should.be.equal(25);
+            });
+
+        });
 
         describe(' >get', function () {
 

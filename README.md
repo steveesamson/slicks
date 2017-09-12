@@ -71,11 +71,12 @@ These are the exposed model functions:
 ```javascript
 var model = Slicks.Model({});
 
-/*This is possible even when model has no url at initialization*/
+/*This is possible even when 
+model has no url at initialization*/
 model.fetch('/user/roles',{userid:'ssamson'},function(e,roles){
 	
 	if(!e){
-		console.log(roles);
+		console.log(error, roles);
 	}
 	
 });
@@ -84,13 +85,15 @@ model.fetch('/user/roles',{userid:'ssamson'},function(e,roles){
 ```javascript
 var model = Slicks.Model({}),
 
-credentials = getCredentials();/*Some method somewhere*/
+/*Some method somewhere*/
+credentials = getCredentials();
 
-/*This is possible even when model has no url at initialization*/
-model.post('/user/login',credentials,function(e,status){
+/*This is possible even when 
+model has no url at initialization*/
+model.post('/user/login',credentials,function(error, result){
 	
 	if(!e){
-		console.log(status);
+		console.log(error, result);
 	}
 	
 });
@@ -101,7 +104,8 @@ var model = Slicks.Model({name:'steve'});
 
 model.set({name:'Tom', age:13, address:'Unknown'});
 
-console.log(model.toJSON());/*The name has changed and age and address were added*/
+/*The name has changed and age and address were added*/
+console.log(model.toJSON());
 ``` 
 - **`toObject:`** *toObject* returns the model attributes as a map `e.g mod.toObject()`.
 
@@ -110,13 +114,15 @@ console.log(model.toJSON());/*The name has changed and age and address were adde
 - **`params:`** *params* returns the model attributes as a hash which could be used as `query-string` to routes that may need information about the model before proceeding. The route can then retrieve the model from the `path` query, parse it to model, use it and then proceed. Check **`Slicks Router`**
 
 ```javascript
-var users = Slicks.Model('/users');
+var user = Slicks.Model('/users');
 
-users.populate({name:'steve',age:25,phone:'2348099887766'});
+user.set({name:'steve',age:25,phone:'2348099887766'});
 
-console.log(users.params()); /* No more need for password */
+/* No more need for password */
+console.log(user.params()); 
 
-/* output: J1olw6wQAGd8fRDDqsK9w5wPwoZ4w7xHFyzCrcOvw5NMw5tUw53Cs8OHw4HDq8OOwoTDsSNGw7RzbgpKCMO4Vk93IsORw5FSZ8Ou , which represent the entire model graph.*/
+/* output: J1olw6wQAGd8fRDDqsK9w5wPwoZ4w7xHFyzCrcOvw5NMw5tUw53Cs8OHw4HDq8OOwoTDsSNGw7RzbgpKCMO4Vk93IsORw5FSZ8Ou, 
+which represent the entire model graph.*/
 ```
 
 - **`extend:`** *extend*, obviously allows us to modify/override or add to the exposed interfaces of Slicks Model, while `set` helps to extend/modify Slicks Model `attributes`, `extend` provides a way to override/add interfaces to the Slicks Model itself. See `sync` example below for how to use `extend`.
@@ -129,13 +135,15 @@ var model = Slicks.Model('/users');
 model.extend({
 
     sync: function (url, method, param, cb) {
- /*Persist or remote somewhere here and thereafter invoke the callback*/
+        /*Persist or remote somewhere here 
+        and thereafter invoke the callback*/
         cb && cb({'text':'Sync override called...','method':method});
     }
 });
 
-/*Here you can then reliably post with the the new sync - simple, huh!*/
-model.post('/users', {id: 'steve'}, function (e,msg) {
+/*Here you can then reliably post 
+with the the new sync - simple, huh!*/
+model.post('/users', {id: 'steve'}, function (error, msg) {
 
     if(!e)
 	{
@@ -154,13 +162,16 @@ var model = Slicks.Model({email:'you@me.com'}),
 
 /*Create event listener*/
 listener = function(changedModel){
-	console.log(changedModel.toJSON());
+    console.log(changedModel.toJSON());
 };
 
-/*Subscribe to event on model. (model, last argument) here is the context, if omitted, then context will be null in the callback.*/
+/*Subscribe to event on model. 
+(model, last argument) here is the context, 
+if omitted, then context will be null in the callback.*/
 model.on('change',listener, model);
 
-/*This triggers change event and listener will be called, context is null here*/
+/*This triggers change event 
+and listener will be called, context is null here*/
 model.change('email','me@you.com');
 ```
 You can equally listen for changes to each of the model attributes like so:
@@ -176,7 +187,8 @@ You can equally listen for changes to each of the model attributes like so:
 ```javascript
 var model = Slicks.Model('/users',{name:'steve',age:30});
 
-/*change attribute and trigger change event, subscribers will be notified*/
+/*change attribute and trigger 
+change event, subscribers will be notified*/
 /* Yes, we can chain most of model methods*/
 model.set('age',25).fire('change');
 ```
@@ -377,7 +389,11 @@ Slicks Views are a sensible way of managing pieces of user interface, UI in a se
 For instance, take a template for a list of users, the following shows the user item template and the compiled version for stud.js use.
 ```html
 <!--userItem.html -->
-<tr><td>{name} - {age} <a href='#' class='del_button'>delete</a></td></tr>
+<tr>
+ <td>
+  {name} - {age} <a href='#' class='del_button'>delete</a>
+ </td>
+</tr>
 ```
 
 ```javascript
@@ -393,12 +409,16 @@ Slicks View has several options, which make the it highly customizable to your h
 
 ```html
 <!--userItem.html -->
-<tr><td>{name} - {age} <a href='#' class='del_button'>delete</a></td></tr>
+<tr>
+  <td>
+    {name} - {age} <a href='#' class='del_button'>delete</a>
+  </td>
+</tr>
 ```
 A view can bind event to the anchor with `class='del_button'` like this:
 ```javascript
 
-    var userModel = Slicks.Model({url:'/user', attributes:{name:'tom', age:25}}),
+    var userModel = Slicks.Model('/user', {name:'tom', age:25}),
         
         userItemView = Slicks.View({
              model:userModel,
@@ -461,7 +481,7 @@ We used **`click`** event in the sample above but we could have used any of `blu
 
 var userItemView = Slicks.View({
       model:userModel,
-      template:"@<td>{name} - {age} <a href='#' class='del_button'>delete</a></td>",
+      template:"@<li>{name} - {age} <a href='#' class='del_button'>delete</a></li>",
       beforeRender:function()
 	  {
 	      this.model.on('change', this.render, this);
@@ -482,7 +502,7 @@ var userItemView = Slicks.View({
 - **`beforeDestroy`** *beforeDestroy* is called once before the view is removed from the DOM. This is the ideal place for clean ups.
 
 ###Slicks Router
-Slick Router is a fork of Pathjs(details at https://github.com/mtrpcic/pathjs), a wonderful piece of module for mapping routes, for deep-linking amongst pages and handling browsers history.
+Slick Router is a fork of [Pathjs](https://github.com/mtrpcic/pathjs), a wonderful piece of module for mapping routes, for deep-linking amongst pages and handling browsers history.
  
 #### These are the Slicks Router exposed interfaces
 - **`goBack:`** *goBack*  can be used to go to the previous view.
@@ -494,7 +514,7 @@ var Router = Slicks.Router();
 /*:id is mandatory here, otherwise, 
 this route will never be matched.*/
 Router.map('#/comments/:id').to(function () {
-	var commentId = this.params['id']
+   var commentId = this.params['id']
    alert('Comments with ID: ' + commentId);
 });
 ```
@@ -530,18 +550,21 @@ Router.map('#/users/register/:query').to(function () {
 
 /*this.query() is a JSON representing 
 the passed model to be registered.*/
-/*Check params under Slicks Model Exposed Interfaces*/
+/*Check params under Slicks Model 
+Exposed Interfaces*/
    alert('New user details: ' + JSON.stringify(this.query()));
 });
 
 /*Landing route when none is specified*/
 Router.root("#/");
-/*Notifications when a non-existent route is called*/
+/*Notifications when 
+a non-existent route is called*/
 Router.rescue(function () {
 
     alert('404: Sorry, resource not found');
 });
-/*Call this last to start the Router.IMPORTANT*/
+/*Call this last to start 
+the Router.IMPORTANT*/
 Router.listen();
     
 ```
@@ -566,7 +589,12 @@ The above compiles to `user.js`. The next thing is to write our row template(in 
 
 ```html
    <!--2. user_row.html row stud.js template-->
-   <tr><td>{name}</td><td><a href='#' class='details'>details</a>|<a href='#' class='remove'>delete</a></td></tr>
+   <tr>
+	  <td>{name}</td>
+	  <td>
+	  <a href='#' class='details'>details</a>|<a href='#' class='remove'>delete</a>
+	  </td>
+    </tr>
 ```
 
 > **Note:** The above template must be compiled to javascript with `stud.js compiler`. The template above would be compiled into a `user_row.js` file and loaded in the head of your html file. Once that was done, the following Slick view will use the template like so:
@@ -580,7 +608,8 @@ Now let us tie everything together as shown below(I believe it is clear as it is
     
        userTableView = Slicks.View({
             collection:userCollection,
-            /*specify which DOM hosts this view e.g body*/
+            /*specify which DOM hosts 
+            this view e.g body*/
             host:'body',
             /*See user.html in 1 above*/
             template:'user',
