@@ -840,30 +840,30 @@
      Session Management
      */
 
-    if (typeof  root.sessionStorage !== 'undefined') {
+    if ((typeof  root.sessionStorage !== 'undefined') && !root.Session) {
 
         sessionStorage.clear();
 
         root.Session = (function () {
-            if (!sessionStorage['heap']) {
-                sessionStorage.setItem('heap', JSON.stringify({}));
-            }
+            //if (!sessionStorage['heap']) {
+            //    sessionStorage.setItem('heap', JSON.stringify({}));
+            //}
 
             var changeListener = [];
             return {
                 set: function (k, v) {
-                    var heap = JSON.parse(sessionStorage.getItem('heap'));
+                    var heap = JSON.parse(sessionStorage.getItem('heap')) || {};
                     heap[k] = v;
                     sessionStorage.setItem('heap', JSON.stringify(heap));
                 },
                 unset: function (k) {
 
-                    var heap = JSON.parse(sessionStorage.getItem('heap'));
+                    var heap = JSON.parse(sessionStorage.getItem('heap')) || {};
                     delete heap[k];
                     sessionStorage.setItem('heap', JSON.stringify(heap));
                 },
                 get: function (k) {
-                    var heap = JSON.parse(sessionStorage.getItem('heap'));
+                    var heap = JSON.parse(sessionStorage.getItem('heap')) || {};
                     return heap[k];
                 },
                 reset: function (appName) {
@@ -2117,22 +2117,18 @@
                                 this.$host.off().children().trigger('destroyed').remove();
                                 this.$host.empty();
                             }
+                            //this.$el.off().html(str).appendTo(this.$host);
 
-                            //this.$el = $(str);
-                            //this.$el.find('[data-showif]').remove();
-                            //this.$el.appendTo(this.$host);
-                            //console.log(str);
+                            this.$el = $(str);
+                            Session.enforcePermissions(this, this.$el);
 
-                            this.$el = $(str).appendTo(this.$host);
-
-
+                            this.$el.appendTo(this.$host);
                         }
                         (this.class && this.$el.attr('class', this['class']));
                         (this.id && this.$el.attr('id', this.id));
 
                         applySteps.call(this);
                     });
-
 
                 },
                 onComets: function (comet) {
