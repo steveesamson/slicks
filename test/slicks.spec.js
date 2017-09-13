@@ -213,23 +213,23 @@ describe('#Slicks ', function () {
                 })
             });
 
-            it('Expects msg to be - "success"', function () {
+            it('Expects e to be - false', function () {
 
                 userModel.save(function (e, msg) {
 
-                    //console.log('MSG: ', msg);
 
-                    msg.should.equal('success');
+
+                    e.should.equal(false);
                 });
             });
 
-            it('Expects msg to be - success', function () {
+            it('Expects e to be - false', function () {
 
                 userModel.set("id", 10);
 
                 userModel.save(function (e, msg) {
 
-                    msg.should.equal('success');
+                    e.should.equal(false);
                 });
             });
 

@@ -48,7 +48,9 @@ var model = Slicks.Model();
 /*attributes defaults to {}*/
 var another = Slicks.Model('/users');
 
-var yetAnother = Slicks.Model('/users',{name:'steve',age:20});
+var yetAnother = Slicks.Model({name:'steve',age:20});
+
+var yetYetAnother = Slicks.Model('/users',{name:'steve',age:20});
 ```
 #### Slicks Model Exposed Interfaces
 These are the exposed model functions:
@@ -73,12 +75,10 @@ var model = Slicks.Model({});
 
 /*This is possible even when 
 model has no url at initialization*/
-model.fetch('/user/roles',{userid:'ssamson'},function(e,roles){
+model.fetch('/user/roles',{userid:'ssamson'},function(error,roles){
 	
-	if(!e){
-		console.log(error, roles);
-	}
-	
+	console.log(error, roles);
+
 });
 ``` 
 - **`post:`** *post* is like `fetch`(see **`fetch`**), except it rides on `POST`, e.g
@@ -91,11 +91,8 @@ credentials = getCredentials();
 /*This is possible even when 
 model has no url at initialization*/
 model.post('/user/login',credentials,function(error, result){
-	
-	if(!e){
+
 		console.log(error, result);
-	}
-	
 });
 ``` 
 - **`populate: This is deprecated, use set instead`** *set* helps us modify and extend model attributes like such:
@@ -143,14 +140,12 @@ model.extend({
 
 /*Here you can then reliably post 
 with the the new sync - simple, huh!*/
-model.post('/users', {id: 'steve'}, function (error, msg) {
+model.post('/users', {id: 'steve'}, function (error, result) {
 
-    if(!e)
-	{
+    if(!error){
 		/*prints {'text':'Sync override called...','method':'post'} */
-		console.log(msg);
-    }
-    
+		console.log(result);
+     }
 });
 ```   
 
@@ -226,9 +221,9 @@ jobs.on('change',function(changedModel){
 });
 
 /*Trigger the events */
-jobs.change('title','Developer').save(function(msg, status){
+jobs.change('title','Developer').save(function(error, msg){
 	/*Do stuff */
-}).destroy(function(msg, status){
+}).destroy(function(error, msg){
 	/*Do stuff */
 });
 ```
@@ -269,9 +264,7 @@ users.on('reset',printUsers).fetch();
 	/*Note that the passed in callback could be omitted*/
 	users.create({name:'tom peters',age:45},function(msg,status){
 
-		if(!e){
-			console.log('Creation status: ', status);
-		}
+		console.log('Creation status: ', status);
 	});
 ```
 
@@ -324,11 +317,11 @@ users.extend({sync:function(url,mtd, params, cb){
 
 var user = {name:'Mary', age:10};
 /*Yes chaining is ok*/
-users.on('reset',printUsers).fetch().create(user,function(msg, status){
+users.on('reset',printUsers).fetch().create(user,function(error, msg){
 
-	if(!e){
-	       /*New user  creation status*/	
-		console.log(status);
+	if(!error){
+	       /*New user  creation status message*/	
+		console.log(msg);
 	}	
 });
 ```

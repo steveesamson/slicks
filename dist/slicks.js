@@ -19,12 +19,453 @@
 
     var $ = root.$,
         stud = root.stud,
-        io = root.io;
+        io = root.io,
+        $3$$10N = function () {
+
+            var x = {};
+
+            x.$ = {
+                prefs: {
+                    memLimit: 2000,
+                    autoFlush: true,
+                    crossDomain: false,
+                    includeProtos: false,
+                    includeFunctions: false
+                },
+                parent: x,
+                clearMem: function () {
+                    for (var i in this.parent) {
+                        if (i != "$") {
+                            this.parent[i] = undefined
+                        }
+                    }
+                    ;
+                    this.flush();
+                },
+                usedMem: function () {
+                    x = {};
+                    return Math.round(this.flush(x) / 1024);
+                },
+                usedMemPercent: function () {
+                    return Math.round(this.usedMem() / this.prefs.memLimit);
+                },
+                flush: function (x) {
+                    var y, o = {}, j = this.$$;
+                    x = x || top;
+                    for (var i in this.parent) {
+                        o[i] = this.parent[i]
+                    }
+                    ;
+                    o.$ = this.prefs;
+                    j.includeProtos = this.prefs.includeProtos;
+                    j.includeFunctions = this.prefs.includeFunctions;
+                    y = this.$$.make(o);
+                    if (x != top) {
+                        return y.length
+                    }
+                    ;
+                    if (y.length / 1024 > this.prefs.memLimit) {
+                        return false
+                    }
+                    x.name = y;
+                    return true;
+                },
+                getDomain: function () {
+                    var l = location.href
+                    l = l.split("///").join("//");
+                    l = l.substring(l.indexOf("://") + 3).split("/")[0];
+                    while (l.split(".").length > 2) {
+                        l = l.substring(l.indexOf(".") + 1)
+                    }
+                    ;
+                    return l
+                },
+                debug: function (t) {
+                    var t = t || this, a = arguments.callee;
+                    if (!document.body) {
+                        setTimeout(function () {
+                            a(t)
+                        }, 200);
+                        return
+                    }
+                    ;
+                    t.flush();
+                    var d = document.getElementById("sessvarsDebugDiv");
+                    if (!d) {
+                        d = document.createElement("div");
+                        document.body.insertBefore(d, document.body.firstChild)
+                    }
+                    ;
+                    d.id = "sessvarsDebugDiv";
+                    d.innerHTML = '<div style="line-height:20px;padding:5px;font-size:11px;font-family:Verdana,Arial,Helvetica;' +
+                        'z-index:10000;background:#FFFFCC;border: 1px solid #333;margin-bottom:12px">' +
+                        '<b style="font-family:Trebuchet MS;font-size:20px">sessvars.js - debug info:</b><br/><br/>' +
+                        'Memory usage: ' + t.usedMem() + ' Kb (' + t.usedMemPercent() + '%)&nbsp;&nbsp;&nbsp;' +
+                        '<span style="cursor:pointer"><b>[Clear memory]</b></span><br/>' +
+                        top.name.split('\n').join('<br/>') + '</div>';
+                    d.getElementsByTagName('span')[0].onclick = function () {
+                        t.clearMem();
+                        location.reload()
+                    }
+                },
+                init: function () {
+                    var o = {}, t = this;
+                    try {
+                        o = this.$$.toObject(top.name)
+                    } catch (e) {
+                        o = {}
+                    }
+                    ;
+                    this.prefs = o.$ || t.prefs;
+                    if (this.prefs.crossDomain || this.prefs.currentDomain == this.getDomain()) {
+                        for (var i in o) {
+                            this.parent[i] = o[i]
+                        }
+                        ;
+                    }
+                    else {
+                        this.prefs.currentDomain = this.getDomain();
+                    }
+                    ;
+                    this.parent.$ = t;
+                    t.flush();
+                    var f = function () {
+                        if (t.prefs.autoFlush) {
+                            t.flush()
+                        }
+                    };
+                    if (window["addEventListener"]) {
+                        addEventListener("unload", f, false)
+                    }
+                    else if (window["attachEvent"]) {
+                        window.attachEvent("onunload", f)
+                    }
+                    else {
+                        this.prefs.autoFlush = false
+                    }
+                    ;
+                }
+            };
+
+            x.$.$$ = {
+                compactOutput: false,
+                includeProtos: false,
+                includeFunctions: false,
+                detectCirculars: true,
+                restoreCirculars: true,
+                make: function (arg, restore) {
+                    this.restore = restore;
+                    this.mem = [];
+                    this.pathMem = [];
+                    return this.toJsonStringArray(arg).join('');
+                },
+                toObject: function (x) {
+                    if (!this.cleaner) {
+                        try {
+                            this.cleaner = new RegExp('^("(\\\\.|[^"\\\\\\n\\r])*?"|[,:{}\\[\\]0-9.\\-+Eaeflnr-u \\n\\r\\t])+?$')
+                        }
+                        catch (a) {
+                            this.cleaner = /^(true|false|null|\[.*\]|\{.*\}|".*"|\d+|\d+\.\d+)$/
+                        }
+                    }
+                    ;
+                    if (!this.cleaner.test(x)) {
+                        return {}
+                    }
+                    ;
+                    eval("this.myObj=" + x);
+                    if (!this.restoreCirculars || !alert) {
+                        return this.myObj
+                    }
+                    ;
+                    if (this.includeFunctions) {
+                        var x = this.myObj;
+                        for (var i in x) {
+                            if (typeof x[i] == "string" && !x[i].indexOf("JSONincludedFunc:")) {
+                                x[i] = x[i].substring(17);
+                                eval("x[i]=" + x[i])
+                            }
+                        }
+                    }
+                    ;
+                    this.restoreCode = [];
+                    this.make(this.myObj, true);
+                    var r = this.restoreCode.join(";") + ";";
+                    eval('r=r.replace(/\\W([0-9]{1,})(\\W)/g,"[$1]$2").replace(/\\.\\;/g,";")');
+                    eval(r);
+                    return this.myObj
+                },
+                toJsonStringArray: function (arg, out) {
+                    if (!out) {
+                        this.path = []
+                    }
+                    ;
+                    out = out || [];
+                    var u; // undefined
+                    switch (typeof arg) {
+                        case 'object':
+                            this.lastObj = arg;
+                            if (this.detectCirculars) {
+                                var m = this.mem;
+                                var n = this.pathMem;
+                                for (var i = 0; i < m.length; i++) {
+                                    if (arg === m[i]) {
+                                        out.push('"JSONcircRef:' + n[i] + '"');
+                                        return out
+                                    }
+                                }
+                                ;
+                                m.push(arg);
+                                n.push(this.path.join("."));
+                            }
+                            ;
+                            if (arg) {
+                                if (arg.constructor == Array) {
+                                    out.push('[');
+                                    for (var i = 0; i < arg.length; ++i) {
+                                        this.path.push(i);
+                                        if (i > 0)
+                                            out.push(',\n');
+                                        this.toJsonStringArray(arg[i], out);
+                                        this.path.pop();
+                                    }
+                                    out.push(']');
+                                    return out;
+                                } else if (typeof arg.toString != 'undefined') {
+                                    out.push('{');
+                                    var first = true;
+                                    for (var i in arg) {
+                                        if (!this.includeProtos && arg[i] === arg.constructor.prototype[i]) {
+                                            continue
+                                        }
+                                        ;
+                                        this.path.push(i);
+                                        var curr = out.length;
+                                        if (!first)
+                                            out.push(this.compactOutput ? ',' : ',\n');
+                                        this.toJsonStringArray(i, out);
+                                        out.push(':');
+                                        this.toJsonStringArray(arg[i], out);
+                                        if (out[out.length - 1] == u)
+                                            out.splice(curr, out.length - curr);
+                                        else
+                                            first = false;
+                                        this.path.pop();
+                                    }
+                                    out.push('}');
+                                    return out;
+                                }
+                                return out;
+                            }
+                            out.push('null');
+                            return out;
+                        case 'unknown':
+                        case 'undefined':
+                        case 'function':
+                            if (!this.includeFunctions) {
+                                out.push(u);
+                                return out
+                            }
+                            ;
+                            arg = "JSONincludedFunc:" + arg;
+                            out.push('"');
+                            var a = ['\n', '\\n', '\r', '\\r', '"', '\\"'];
+                            arg += "";
+                            for (var i = 0; i < 6; i += 2) {
+                                arg = arg.split(a[i]).join(a[i + 1])
+                            }
+                            ;
+                            out.push(arg);
+                            out.push('"');
+                            return out;
+                        case 'string':
+                            if (this.restore && arg.indexOf("JSONcircRef:") == 0) {
+                                this.restoreCode.push('this.myObj.' + this.path.join(".") + "=" + arg.split("JSONcircRef:").join("this.myObj."));
+                            }
+                            ;
+                            out.push('"');
+                            var a = ['\n', '\\n', '\r', '\\r', '"', '\\"'];
+                            arg += "";
+                            for (var i = 0; i < 6; i += 2) {
+                                arg = arg.split(a[i]).join(a[i + 1])
+                            }
+                            ;
+                            out.push(arg);
+                            out.push('"');
+                            return out;
+                        default:
+                            out.push(String(arg));
+                            return out;
+                    }
+                }
+            };
+
+            x.$.init();
+            return x;
+        }(),
+        Session = (function () {
+            if (!$3$$10N['heap']) {
+                $3$$10N['heap'] = {};
+            }
+
+            var changeListener = [];
+            return {
+                set: function (k, v) {
+                    $3$$10N['heap'][k] = v;
+                },
+                unset: function (k) {
+                    delete $3$$10N['heap'][k];
+                },
+                get: function (k) {
+                    return $3$$10N['heap'][k];
+                },
+                reset: function () {
+                    $3$$10N['heap'] = {};
+                },
+                user: function (options) {
+                    if (options) {
+                        var me = $3$$10N['_u53r_'];
+                        _.xtend(me, options);
+
+                        $3$$10N['_u53r_'] = me;
+
+                        _.each(changeListener, function () {
+                            this();
+                        });
+
+                    } else {
+                        return $3$$10N['_u53r_'];
+                    }
+
+                },
+                appName: function (_appName) {
+                    if (_appName) {
+                        $3$$10N['_@ppN@m3_'] = _appName;
+                    } else {
+                        return $3$$10N['_@ppN@m3_'];
+                    }
+                },
+                faker: function (_faker) {
+                    if (_faker) {
+                        $3$$10N['_f@k3r_'] = _faker;
+                    } else {
+                        return $3$$10N['_f@k3r_'];
+                    }
+                },
+                unsetFaker: function () {
+
+                    delete $3$$10N['_f@k3r_'];
+                },
+                isAuthenticated: function () {
+
+                    return (this.user() && this.user().domain) && (this.user().domain === this.appName());
+
+                },
+                cans: function () {
+                    var Robaac = this.user() ? _.robaac(this.user().roles) : null;
+                    return Robaac && Robaac.cans(this.user().role);
+                },
+                has: function (action) {
+                    var Robaac = this.user() ? _.robaac(this.user().roles) : null;
+                    return Robaac && Robaac.has(this.user().role, action);
+                },
+                can: function (action, param) {
+
+                    var Robaac = this.user() ? _.robaac(this.user().roles) : null;
+                    return Robaac && ( param ? Robaac.can(this.user().role, action, param) : Robaac.has(this.user().role, action));
+                },
+                enforcePermissions: function (context, $el) {
+
+                    var permits = [],
+                        _data = context.model ? context.model.toObject() : {},
+                        role = this.user() ? this.user().role : null,
+                        roles = this.user() ? this.user().roles : null,
+                        Robaac = roles ? _.robaac(roles) : null;
 
 
-    if (!root.sessionStorage) {
-        console.log("Unsupported browser, please switch to a modern browser, i.e chrome or firefox");
+                    if (Robaac && roles && role) {
+                        _.each(roles[role].can, function (i, v) {
+
+                            v = (typeof v === 'string') ? v : v.name;
+
+                            Robaac.can(role, v, _data, function (r) {
+
+                                r && permits.push('.rbk-' + v);
+                            });
+                        });
+
+                        $el.find('[class*=rbk-]').not(permits.join(',')).remove();
+                    }
+
+
+                },
+                inRole: function (role) {
+                    return (this.user() && (this.user().role === role)) ? true : false;
+                },
+                login: function (user, _appName) {
+                    this.appName(_appName);
+                    user.domain = _appName;
+
+                    $3$$10N['_u53r_'] = user;
+                    this.unsetFaker();
+
+                    this.begin();
+                },
+                begin: function () {
+                    var wait = 10,
+                        self = this,
+                        timer, get_out = function () {
+                            clearTimeout(timer);
+                            Router.dispatch('#/logout');
+                        },
+                        resetTimer = function (e) {
+                            clearTimeout(timer);
+                            timer = setTimeout(get_out, 60000 * wait);
+                        };
+                    root.document.onkeypress = resetTimer;
+                    root.document.onmousemove = resetTimer;
+                },
+                onChange: function (cb) {
+                    changeListener.push(cb);
+                },
+                logout: function (cb) {
+                    var appName = $3$$10N['_@ppN@m3_']; //for
+
+                    $3$$10N.$.clearMem();
+                    $3$$10N['_@ppN@m3_'] = appName;
+                    this.reset();
+                    if (cb) {
+                        cb()
+                    } else {
+                        Router.dispatch('#/');
+                        location.hash = '#/';
+                    }
+
+                }
+            };
+        })(),
+        Keys = {
+            Enter: 13,
+            Shift: 16,
+            Tab: 9,
+            Escape: 27,
+            LeftArrow: 37
+        };
+
+    for (var i in Keys) {
+        Keys['is' + i] = (function (compare) {
+            return function (e) {
+                return (e.keyCode || e.which) === compare;
+
+            };
+        })(Keys[i]);
     }
+    /*!
+     Session Management
+     */
+
+
+
 
     if (!$) {
         console.log("Include jQuery on your page to use Slicks");
@@ -567,7 +1008,6 @@
     }());
 
 
-
     /*!
      Extending JQuery, these are plugins
      */
@@ -818,219 +1258,6 @@
 
     $('.data-connecting').hide();
 
-    /*!
-     Session Management
-     */
-
-    if (typeof root.Session === 'undefined' || !root.Session) {
-
-        root.Keys = {
-            Enter: 13,
-            Shift: 16,
-            Tab: 9,
-            Escape: 27,
-            LeftArrow: 37
-        };
-        for (var i in Keys) {
-            Keys['is' + i] = (function (compare) {
-                return function (e) {
-                    return (e.keyCode || e.which) === compare;
-
-                };
-            })(Keys[i]);
-        }
-
-        root.Session = (function () {
-            if (!$3$$10N['heap']) {
-                $3$$10N['heap'] = {};
-            }
-
-            var changeListener = [];
-            return {
-                set: function (k, v) {
-                    $3$$10N['heap'][k] = v;
-                },
-                unset: function (k) {
-                    delete $3$$10N['heap'][k];
-                },
-                get: function (k) {
-                    return $3$$10N['heap'][k];
-                },
-                reset: function () {
-                    $3$$10N['heap'] = {};
-                },
-                user: function (options) {
-                    if (options) {
-                        var me = $3$$10N['_u53r_'];
-                        _.xtend(me, options);
-
-                        $3$$10N['_u53r_'] = me;
-
-                        _.each(changeListener, function () {
-                            this();
-                        });
-
-                    } else {
-                        return $3$$10N['_u53r_'];
-                    }
-
-                },
-                appName: function (_appName) {
-                    if (_appName) {
-                        $3$$10N['_@ppN@m3_'] = _appName;
-                    } else {
-                        return $3$$10N['_@ppN@m3_'];
-                    }
-                },
-                faker: function (_faker) {
-                    if (_faker) {
-                        $3$$10N['_f@k3r_'] = _faker;
-                    } else {
-                        return $3$$10N['_f@k3r_'];
-                    }
-                },
-                unsetFaker: function () {
-
-                    delete $3$$10N['_f@k3r_'];
-                },
-                isAuthenticated: function () {
-
-                    return (this.user() && this.user().domain) && (this.user().domain === this.appName());
-
-                },
-                cans:function(){
-                    var Robaac = this.user()? _.robaac(this.user().roles) : null;
-                    return Robaac &&  Robaac.cans(this.user().role);
-                },
-                has:function(action){
-                    var Robaac = this.user()? _.robaac(this.user().roles) : null;
-                    return Robaac &&  Robaac.has(this.user().role, action);
-                },
-                can: function (action, param) {
-                    //console.log('ROLE: ', this.roles());
-
-                    var Robaac = this.user()? _.robaac(this.user().roles) : null;
-                    return Robaac && ( param ? Robaac.can(this.user().role, action, param) : Robaac.has(this.user().role, action));
-                },
-                enforcePermissions:function(context, $el){
-
-
-
-                    var permits = [],
-                        _data = context.model? context.model.toObject() : {},
-                        role = this.user()? this.user().role : null,
-                        roles = this.user()? this.user().roles: null,
-                        Robaac = roles? _.robaac(roles) : null;
-
-
-                    //console.log('PARAM1: ', _data);
-
-                    if(Robaac && roles && role){
-                        _.each(roles[role].can, function (i,v) {
-
-                            v = (typeof v  === 'string')? v : v.name;
-
-                            //if (Robaac.can(role, v, _data, function(r){})) {
-                            //    permits.push('.rbk-' + v);
-                            //}
-                            Robaac.can(role, v, _data, function(r){
-
-                                //console.log('Can: %s = %s', v, r );
-
-                                r && permits.push('.rbk-' + v);
-                            });
-                        });
-
-                        //console.log('Permits: ', permits.join(','));
-
-                        //permits.length && $el.find('[class*=rbk-]').not(permits.join(',')).remove();
-                        $el.find('[class*=rbk-]').not(permits.join(',')).remove();
-                    }
-
-
-                    //permits = Robaac ? Robaac.permissions(this.user().role) : '';
-
-                    //console.log('Permissions: ', permits);
-
-                    //permits && $el.find('[class*=rbk-]').not(permits).remove();
-                },
-                inRole: function (role) {
-                    //return (this.user() && ($.inArray(role, this.user().roles) > -1));
-                    return (this.user() && (this.user().role === role))? true: false;
-                },
-
-                //login: function (user, _appName) {
-                //    this.appName(_appName);
-                //    user.domain = _appName;
-                //    $3$$10N['_u53r_'] = user;
-                //    this.unsetFaker();
-                //    // SlickCart.init();
-                //    this.begin();
-                //},
-                //roles:function(roles){
-                //    if(roles){
-                //        $3$$10N['_r0l35_'] = roles;
-                //    }
-                //    else{
-                //        return  $3$$10N['_r0l35_'];
-                //    }
-                //},
-                login: function (user, _appName) {
-                    this.appName(_appName);
-                    user.domain = _appName;
-
-                    //console.log('ROLE: ', user.roles);
-                    //console.log(user);
-                    //var roles = {};
-                    //_.xtend(roles, user.roles);
-                    //delete user.roles;
-
-                    $3$$10N['_u53r_'] = user;
-                    //this.roles(roles);
-                    this.unsetFaker();
-
-                    //this.Robaac = _.robaac(roles);
-                    //console.log('Permissions: ', this.Robaac.permissions(user.role));
-                    this.begin();
-                },
-                begin: function () {
-                    var wait = 10,
-                        self = this,
-                        timer, get_out = function () {
-                            clearTimeout(timer);
-                            Router.dispatch('#/logout');
-                        },
-                        resetTimer = function (e) {
-                            clearTimeout(timer);
-                            timer = setTimeout(get_out, 60000 * wait);
-                        };
-                    root.document.onkeypress = resetTimer;
-                    root.document.onmousemove = resetTimer;
-                },
-                onChange: function (cb) {
-                    changeListener.push(cb);
-                },
-                logout: function (cb) {
-                    var appName = $3$$10N['_@ppN@m3_']; //for
-
-                    $3$$10N.$.clearMem();
-                    $3$$10N['_@ppN@m3_'] = appName;
-                    this.reset();
-                    if (cb) {
-                        cb()
-                    } else {
-                        Router.dispatch('#/');
-                        location.hash = '#/';
-                    }
-
-                }
-            };
-        })();
-
-        $(root).on('hashchange', function () {
-            $(this).scrollTop(0);
-        });
-    }
 
     /*!
      Slick Object
@@ -1124,7 +1351,7 @@
 
                 //console.log('URL:',url, ' DATA:', data, ' MTD:',method);
 
-                Session.isAuthenticated() && _.xtend(data, {'x-csrf-token': Session.user().token});
+                Session && Session.isAuthenticated() && _.xtend(data, {'x-csrf-token': Session.user().token});
 
                 socket.emit(method, {path: url, data: data}, cb);
 
@@ -1387,11 +1614,12 @@
                     this.do_exit = null;
                     this.params = {};
                     this.query = function () {
-                        var q = this.params['query'];
+                        var q = this.params['query'],
+                            appName = Session ? Session.appName() : '';
 
                         if (q) {
                             q = decodeURIComponent(q);
-                            q = Slicks.cypher.decrypt(q, Session.appName());
+                            q = Slicks.cypher.decrypt(q, appName);
                             return q ? JSON.parse(q) : q;
                         }
                         return q;
@@ -1538,7 +1766,8 @@
                 },
                 params: function (param) {
 
-                    var enc = Slicks.cypher.encrypt(JSON.stringify(param || attributes), Session.appName());
+                    var appName = Session ? Session.appName() : '',
+                        enc = Slicks.cypher.encrypt(JSON.stringify(param || attributes), appName);
                     enc = encodeURIComponent(enc);
                     return enc;
                 },
@@ -1628,7 +1857,7 @@
                                 dirty_attributes = {};
 
                                 if (cb && _.isFunction(cb)) {
-                                    cb(_.makeName(self.model_name) + ' was successfully updated.', 'success');
+                                    cb(false, _.makeName(self.model_name) + ' was successfully updated.');
                                 } else {
                                     $.notify(_.makeName(self.model_name) + ' was successfully updated.', 'success');
                                 }
@@ -1640,7 +1869,7 @@
                                 fireEvents.call(modelEvents, 'created', self);
                                 if (cb && _.isFunction(cb)) {
 
-                                    cb(_.makeName(self.model_name) + ' was successfully created.', 'success');
+                                    cb(false, _.makeName(self.model_name) + ' was successfully created.');
 
                                 } else {
                                     $.notify(_.makeName(self.model_name) + ' was successfully created.', 'success');
@@ -2142,7 +2371,7 @@
                             //this.$el.off().html(str).appendTo(this.$host);
 
                             this.$el = $(str);
-                            Session.enforcePermissions(this, this.$el);
+                            Session && Session.enforcePermissions(this, this.$el);
 
                             this.$el.appendTo(this.$host);
                         }
@@ -2177,7 +2406,7 @@
 
                     //console.log('Base afterRender');
 
-                    this.addCaptcha && !Session.isAuthenticated() && this.reCaptcha();
+                    this.addCaptcha && Session && !Session.isAuthenticated() && this.reCaptcha();
 
                     var afterRenderHook = this.hooks['afterRender'];
                     afterRenderHook && afterRenderHook.call(this);
@@ -2197,9 +2426,9 @@
                     _.template.call(this, function (str) {
 
 
-                        if(str){
+                        if (str) {
                             str = $(str);
-                            Session.enforcePermissions(this, str);
+                            Session && Session.enforcePermissions(this, str);
                             this.$el.off().html(str.html());
                         }
                         (this.class && this.$el.attr('class', this.class));
@@ -2659,6 +2888,17 @@
 
     };
 
+
+    if (typeof root.Session === 'undefined') {
+
+        root.$3$$10N = $3$$10N;
+        root.Session = Session;
+        root.Keys = Keys;
+
+        $(root).on('hashchange', function () {
+            $(this).scrollTop(0);
+        });
+    }
 
     _.xtend(Slicks, {
         '$': $,
