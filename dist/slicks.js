@@ -1982,7 +1982,7 @@
                         if (this.map[mdl.get('id')]) {
 
                             var old = this.map[mdl.get('id')];
-                            old.populate(mdl.toObject());
+                            old.set(mdl.toObject());
                             old.fire('change');
                             //In case; already exists.
                             return;
@@ -2840,7 +2840,7 @@
                                 });
                                 printDefs.base_href = baseHref();
                                 var printModel = options.model || Model();
-                                printModel.populate(printDefs);
+                                printModel.set(printDefs);
                                 _.template.call(self, function (str) {
                                     str = str.replace(/@print_body/, $element.html());
                                     cb(str);
