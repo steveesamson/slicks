@@ -234,7 +234,7 @@ describe('#Slicks ', function () {
             });
 
 
-            it('Expects msg to be - error', function () {
+            it('Expects e to be true ', function () {
 
                 userModel.extend({
                     sync: function (url, mtd, param, cb) {
@@ -244,11 +244,11 @@ describe('#Slicks ', function () {
 
                 userModel.destroy(function (e, msg) {
 
-                    msg.should.equal('error');
+                    e.should.equal(true);
                 });
             });
 
-            it('Expects e to be - "Not good."', function () {
+            it('Expects msg to be - "Not good."', function () {
 
                 userModel.extend({
                     sync: function (url, mtd, param, cb) {
@@ -258,7 +258,7 @@ describe('#Slicks ', function () {
 
                 userModel.destroy(function (e, msg) {
 
-                    e.should.equal('Not good.');
+                    msg.should.equal('Not good.');
                 });
             });
 
